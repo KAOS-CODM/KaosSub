@@ -142,3 +142,7 @@ build/
 
 # DynamoDB Local files
 .dynamodb/
+
+#script
+show-structure.sh
+
