@@ -1,0 +1,41 @@
+{
+  "company": {
+    "name": "KaosSub",
+    "fullName": "KaosSub Data Services",
+    "domain": "kaossub.com",
+    "phone": "+2347064237733 (WhatsApp Only)",
+    "email": "support@kaossub.com",
+    "address": "Suite 15, Block C3, Commerce Plaza, Area 3, Abuja",
+    "slogan": "Affordable Data Subscriptions for Everyone"
+  },
+  "newsletter": {
+    "title": "Join Our Newsletter",
+    "description": "Drop Your e-Mail Address in the Input Field Below to get Update from us",
+    "buttonText": "Subscribe"
+  },
+  "usefulLinks": [
+    { "name": "Home", "url": "/" },
+    { "name": "About us", "url": "/about" },
+    { "name": "Contact Us", "url": "/contact" },
+    { "name": "Profile Settings", "url": "/profile-settings" },
+    { "name": "Refund Policy", "url": "/refund-policy" },
+    { "name": "Network Terms", "url": "/network-terms" },
+    { "name": "Privacy Policy", "url": "/privacy-policy" }
+  ],
+  "products": [
+    { "name": "Data Bundle", "url": "/data-plans" },
+    { "name": "Airtime", "url": "/airtime", "comingSoon": true },
+    { "name": "Cable TV Subscription", "url": "/tv-subscription", "comingSoon": true },
+    { "name": "Bill Payment", "url": "/bill-payment", "comingSoon": true },
+    { "name": "WAEC Result Pin", "url": "/waec-pin", "comingSoon": true },
+    { "name": "NECO Result Token", "url": "/neco-token", "comingSoon": true },
+    { "name": "NABTEB Result Pin", "url": "/nabteb-pin", "comingSoon": true }
+  ],
+  "socialMedia": [
+    { "name": "twitter", "icon": "fab fa-twitter", "url": "#" },
+    { "name": "facebook", "icon": "fab fa-facebook-f", "url": "#" },
+    { "name": "instagram", "icon": "fab fa-instagram", "url": "#" },
+    { "name": "whatsapp", "icon": "fab fa-whatsapp", "url": "#" },
+    { "name": "linkedin", "icon": "fab fa-linkedin-in", "url": "#" }
+  ]
+}

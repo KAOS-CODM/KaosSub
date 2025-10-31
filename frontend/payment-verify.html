@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Verification - KaosSub</title>
+    <link rel="icon" type="image/x-icon" href="/assets/favicon/favicon.ico">
+    <link rel="icon" type="image/png" href="/assets/favicon/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon/favicon.svg">
+    <link rel="apple-touch-icon" href="/assets/favicon/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon/favicon.svg">
+    <meta name="theme-color" content="#dc3545">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .verification-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .verification-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .verification-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .verification-success {
+            color: #28a745;
+        }
+
+        .verification-error {
+            color: #dc3545;
+        }
+
+        .verification-processing {
+            color: #ffc107;
+        }
+
+        .verification-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .verification-message {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .verification-button {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .verification-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        }
+
+        .verification-button-secondary {
+            background: linear-gradient(135deg, #6c757d, #545b62);
+        }
+
+        .verification-button-secondary:hover {
+            box-shadow: 0 5px 15px rgba(108,117,125,0.3);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .balance-update {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .verification-container {
+                padding: 10px;
+            }
+
+            .verification-card {
+                padding: 25px;
+            }
+
+            .verification-title {
+                font-size: 1.5rem;
+            }
+
+            .verification-icon {
+                font-size: 3rem;
+            }
+        }
+    </style>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>KaosSub</h1>
+            <nav style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem;">
+                <a href="/" style="text-decoration: none; color: #333; font-weight: 500;">Home</a>
+                <a href="/dashboard" style="text-decoration: none; color: #333; font-weight: 500;">Dashboard</a>
+                <a href="/data-plans" style="text-decoration: none; color: #333; font-weight: 500;">Data Plans</a>
+                <a href="/contact" style="text-decoration: none; color: #333; font-weight: 500;">Contact</a>
+            </nav>
+        </header>
+
+        <main>
+            <div class="verification-container">
+                <!-- Loading Section -->
+                <div id="loading-section" class="verification-card">
+                    <div class="spinner"></div>
+                    <div class="verification-icon verification-processing">
+                        <i class="fas fa-spinner"></i>
+                    </div>
+                    <h2 class="verification-title verification-processing">Verifying Payment</h2>
+                    <p class="verification-message">Please wait while we verify your payment transaction.</p>
+                </div>
+
+                <!-- Success Section -->
+                <div id="success-section" class="verification-card hidden">
+                    <div class="verification-icon verification-success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2 class="verification-title verification-success">Payment Successful! 🎉</h2>
+                    <p class="verification-message" id="success-message">Your payment has been verified successfully.</p>
+                    <div id="balance-update" class="balance-update hidden">
+                        New Balance: <span id="new-balance-amount">₦0.00</span>
+                    </div>
+                    <button onclick="window.location.href = '/dashboard'" class="verification-button">
+                        <i class="fas fa-tachometer-alt"></i> Return to Dashboard
+                    </button>
+                    <div style="margin-top: 15px;">
+                        <button onclick="window.location.href = '/data-plans'" class="verification-button verification-button-secondary">
+                            <i class="fas fa-wifi"></i> Buy Data Now
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Error Section -->
+                <div id="error-section" class="verification-card hidden">
+                    <div class="verification-icon verification-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <h2 class="verification-title verification-error">Payment Failed</h2>
+                    <p class="verification-message" id="error-message">There was an issue verifying your payment.</p>
+                    <button onclick="window.location.href = '/dashboard'" class="verification-button verification-button-secondary">
+                        <i class="fas fa-tachometer-alt"></i> Return to Dashboard
+                    </button>
+                    <div style="margin-top: 15px;">
+                        <button onclick="window.location.href = '/dashboard#wallet'" class="verification-button">
+                            <i class="fas fa-wallet"></i> Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Load ALL external scripts FIRST -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- Then run the inline script that depends on them -->
+    <script>
+        // Wait for all scripts to load
+        window.addEventListener('load', function() {
+            function showSuccess(message, newBalance = null) {
+                const loadingSection = document.getElementById('loading-section');
+                const successSection = document.getElementById('success-section');
+                const successMessage = document.getElementById('success-message');
+                const balanceUpdate = document.getElementById('balance-update');
+                const newBalanceAmount = document.getElementById('new-balance-amount');
+
+                if (loadingSection) loadingSection.classList.add('hidden');
+                if (successSection) successSection.classList.remove('hidden');
+                if (successMessage) successMessage.textContent = message;
+                
+                if (newBalance && balanceUpdate && newBalanceAmount) {
+                    newBalanceAmount.textContent = Utils.formatCurrency(newBalance);
+                    balanceUpdate.classList.remove('hidden');
+                }
+            }
+
+            function showError(message) {
+                const loadingSection = document.getElementById('loading-section');
+                const errorSection = document.getElementById('error-section');
+                const errorMessage = document.getElementById('error-message');
+
+                if (loadingSection) loadingSection.classList.add('hidden');
+                if (errorSection) errorSection.classList.remove('hidden');
+                if (errorMessage) errorMessage.textContent = message;
+            }
+
+            async function verifyPayment() {
+                try {
+                    // Check if Utils is available
+                    if (typeof Utils === 'undefined') {
+                        throw new Error('Authentication system not loaded');
+                    }
+
+                    // Check authentication
+                    if (!Utils.requireAuth()) {
+                        return; // redirectToLogin was called
+                    }
+
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const reference = urlParams.get('reference');
+
+                    if (!reference) {
+                        throw new Error('No payment reference found in URL');
+                    }
+
+                    // Call backend to verify payment
+                    const response = await Utils.apiRequest(`/api/wallet/verify-payment/${reference}`);
+
+                    if (response && response.success) {
+                        const amount = response.data ? Utils.formatCurrency(response.data.amount) : 'the payment';
+                        const newBalance = response.data ? response.data.new_balance : null;
+                        
+                        let successMessage = `Payment of ${amount} verified successfully!`;
+                        if (response.data && response.data.new_balance) {
+                            successMessage = `Payment of ${amount} verified successfully! Your wallet balance has been updated.`;
+                        }
+                        
+                        showSuccess(successMessage, newBalance);
+                    } else {
+                        throw new Error(response ? response.error : 'Payment verification failed');
+                    }
+                } catch (error) {
+                    console.error('❌ Payment verification error:', error);
+                    showError(error.message || 'An unexpected error occurred while verifying your payment. Please try again or contact support if the issue persists.');
+                }
+            }
+
+            // Start the verification process
+            verifyPayment();
+        });
+    </script>
+
+    <!-- Load Footer Component -->
+    <script src="/js/components/footer.js"></script>
+
+    <!-- Hamburger Menu -->
+    <script src="/js/components/hamburger-menu.js"></script>
+    
+    <!-- Form Handler -->
+    <script src="/js/components/simple-form-handler.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+ESSENTIAL FILES (Do not delete):
+
+BACKEND:
+✅ backend/server.js - Main server file
+✅ backend/package.json - Dependencies
+✅ backend/.env - Environment variables
+✅ backend/config/ - Configuration files
+✅ backend/routes/ - API routes
+✅ backend/middleware/ - Authentication middleware
+✅ backend/controllers/ - Business logic
+✅ backend/services/ - Service layers
+
+FRONTEND:
+✅ frontend/index.html - Homepage
+✅ frontend/dashboard.html - User dashboard
+✅ frontend/data-plans.html - Data purchase
+✅ frontend/history.html - Transaction history
+✅ frontend/profile-settings.html - Profile management
+✅ frontend/login.html - Login page
+✅ frontend/signup.html - Registration
+✅ frontend/admin.html - Admin panel
+✅ frontend/css/styles.css - Main styles
+✅ frontend/js/app.js - Main application logic
+✅ frontend/js/utils.js - Utility functions
+✅ frontend/js/components/ - Reusable components
+✅ frontend/assets/ - Images and static files
+
+OTHER:
+✅ README.md - Project documentation
+✅ .gitignore - Git ignore rules
