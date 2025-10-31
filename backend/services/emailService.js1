@@ -11,53 +11,28 @@ class EmailService {
             emailsSent: 0,
             lastReset: Date.now()
         };
-        
-        // SendGrid setup
-        this.sendGridEnabled = false;
-        this.sendGrid = null;
-        
         this.initializeTransporter();
     }
 
     initializeTransporter() {
         // Auto-detect if we're in production with email credentials
         const hasEmailConfig = process.env.EMAIL_USER && process.env.EMAIL_PASSWORD;
-        const hasSendGridConfig = process.env.SENDGRID_API_KEY;
-
-        // Initialize SendGrid if available
-        if (hasSendGridConfig) {
-            try {
-                this.sendGrid = require('@sendgrid/mail');
-                this.sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
-                this.sendGridEnabled = true;
-                console.log('📧 SendGrid service initialized');
-            } catch (error) {
-                console.log('❌ SendGrid initialization failed:', error.message);
-            }
-        }
-
-        if ((hasEmailConfig || this.sendGridEnabled) && process.env.NODE_ENV === 'production') {
+        
+        if (hasEmailConfig && process.env.NODE_ENV === 'production') {
             console.log('📧 Email service initialized (production mode)');
-
-            // Only create SMTP transporter if email config is available
-            if (hasEmailConfig) {
-                this.transporter = nodemailer.createTransport({
-                    service: process.env.EMAIL_SERVICE || 'gmail',
-                    host: process.env.EMAIL_HOST,
-                    port: parseInt(process.env.EMAIL_PORT) || 587,
-                    secure: process.env.EMAIL_SECURE === 'true',
-                    auth: {
-                        user: process.env.EMAIL_USER,
-                        pass: process.env.EMAIL_PASSWORD,
-                    },
-                    // INCREASED TIMEOUTS FOR RENDER
-                    connectionTimeout: 30000, // 30 seconds
-                    socketTimeout: 60000, // 60 seconds
-                    greetingTimeout: 30000,
-                    debug: process.env.EMAIL_DEBUG === 'true',
-                    logger: process.env.EMAIL_DEBUG === 'true'
-                });
-            }
+            
+            this.transporter = nodemailer.createTransport({
+                service: process.env.EMAIL_SERVICE || 'gmail',
+                host: process.env.EMAIL_HOST,
+                port: parseInt(process.env.EMAIL_PORT) || 587,
+                secure: process.env.EMAIL_SECURE === 'true',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASSWORD,
+                },
+                connectionTimeout: parseInt(process.env.EMAIL_TIMEOUT) || 10000,
+                socketTimeout: parseInt(process.env.EMAIL_TIMEOUT) || 10000,
+            });
 
             // Test the connection
             this.testConnection();
@@ -68,157 +43,18 @@ class EmailService {
         }
     }
 
-    // Test email connection with enhanced timeout handling
+    // Test email connection
     async testConnection() {
-        console.log('🔧 Testing email connections...');
-        
-        // Test SendGrid first if available
-        if (this.sendGridEnabled) {
-            try {
-                // Simple SendGrid test - try a basic API call
-                console.log('✅ SendGrid API key configured and ready');
-            } catch (error) {
-                console.log('❌ SendGrid test failed:', error.message);
-            }
-        }
-
-        // Test SMTP connection if available
-        if (this.transporter) {
-            try {
-                await Promise.race([
-                    this.transporter.verify(),
-                    new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('SMTP verification timeout')), 15000)
-                    )
-                ]);
-                console.log('✅ SMTP connection verified');
-            } catch (error) {
-                console.log('❌ SMTP connection failed:', error.message);
-                // Don't fall back to demo mode if SendGrid is available
-                if (!this.sendGridEnabled) {
-                    console.log('🔄 Falling back to demo mode');
-                    this.demoMode = true;
-                }
-            }
+        try {
+            await this.transporter.verify();
+            console.log('✅ Email server connection verified');
+        } catch (error) {
+            console.error('❌ Email server connection failed:', error.message);
+            console.log('🔄 Falling back to demo mode');
+            this.demoMode = true;
         }
     }
 
-    // Enhanced email sending with SendGrid fallback
-    async sendEmailWithRetry(email, subject, html, resolve, retries = 3) {
-        for (let attempt = 1; attempt <= retries; attempt++) {
-            try {
-                // Try SendGrid first if available
-                if (this.sendGridEnabled && attempt === 1) {
-                    try {
-                        const msg = {
-                            to: email,
-                            from: process.env.EMAIL_FROM || 'noreply@kaossub.com',
-                            subject: subject,
-                            html: html,
-                        };
-                        
-                        await this.sendGrid.send(msg);
-                        console.log(`✅ Email sent via SendGrid to: ${email}`);
-                        resolve({ success: true, demo: false, attempt: attempt, method: 'sendgrid' });
-                        return;
-                    } catch (sendGridError) {
-                        console.log(`❌ SendGrid failed, falling back to SMTP: ${sendGridError.message}`);
-                        // Continue to SMTP fallback
-                    }
-                }
-
-                // Fallback to SMTP
-                if (this.transporter) {
-                    const mailOptions = {
-                        from: process.env.EMAIL_FROM || 'KaosSub <noreply@kaossub.com>',
-                        to: email,
-                        subject: subject,
-                        html: html,
-                    };
-
-                    await this.transporter.sendMail(mailOptions);
-                    console.log(`✅ Email sent via SMTP to: ${email} (Attempt ${attempt})`);
-                    resolve({ success: true, demo: false, attempt: attempt, method: 'smtp' });
-                    return;
-                } else {
-                    throw new Error('No email transport available');
-                }
-
-            } catch (error) {
-                console.error(`❌ Email send failed (Attempt ${attempt}/${retries} to ${email}):`, error.message);
-
-                if (attempt === retries) {
-                    // Final fallback to demo mode
-                    console.log(`📧 DEMO: Email would be sent to: ${email}`);
-                    console.log('   - Subject:', subject);
-                    resolve({
-                        success: true,
-                        demo: true,
-                        error: 'Production email failed, logged to console',
-                        method: 'demo'
-                    });
-                    return;
-                }
-
-                // Wait before retry (exponential backoff)
-                const backoffTime = 1000 * attempt * attempt;
-                console.log(`🔄 Retrying in ${backoffTime/1000} seconds...`);
-                await new Promise(resolve => setTimeout(resolve, backoffTime));
-            }
-        }
-    }
-
-    // Enhanced queue processing with better error handling
-    async processQueue() {
-        if (this.sending) return;
-
-        this.sending = true;
-
-        while (this.emailQueue.length > 0) {
-            // Check rate limit
-            const now = Date.now();
-            if (now - this.rateLimit.lastReset > 60000) { // 1 minute
-                this.rateLimit.emailsSent = 0;
-                this.rateLimit.lastReset = now;
-            }
-
-            if (this.rateLimit.emailsSent >= this.rateLimit.maxEmailsPerMinute) {
-                // Wait until next minute
-                const waitTime = 60000 - (now - this.rateLimit.lastReset);
-                console.log(`⏳ Rate limit reached. Waiting ${Math.ceil(waitTime/1000)} seconds...`);
-                await new Promise(resolve => setTimeout(resolve, waitTime));
-                continue;
-            }
-
-            const emailData = this.emailQueue.shift();
-            await this.sendEmailWithRetry(
-                emailData.email,
-                emailData.subject,
-                emailData.html,
-                emailData.resolve
-            );
-            this.rateLimit.emailsSent++;
-        }
-
-        this.sending = false;
-    }
-
-    // Enhanced status method to include SendGrid info
-    getStatus() {
-        return {
-            demoMode: this.demoMode,
-            queueLength: this.emailQueue.length,
-            rateLimit: this.rateLimit,
-            sending: this.sending,
-            sendGridEnabled: this.sendGridEnabled,
-            smtpEnabled: !!this.transporter,
-            availableMethods: this.sendGridEnabled ? ['sendgrid', 'smtp', 'demo'] : (this.transporter ? ['smtp', 'demo'] : ['demo'])
-        };
-    }
-
-    // ALL YOUR EXISTING METHODS REMAIN EXACTLY THE SAME - NO CHANGES BELOW THIS LINE
-    // ----------------------------------------------------------------------------
-    
     // Validate email format
     validateEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -254,20 +90,20 @@ class EmailService {
                     throw new Error('Demo mode: Simulated email failure');
                 }
 
-                return {
-                    success: true,
-                    demo: true,
+                return { 
+                    success: true, 
+                    demo: true, 
                     otp: otpCode,
-                    attempt: attempt
+                    attempt: attempt 
                 };
 
             } catch (error) {
                 console.error(`❌ Demo email send failed (Attempt ${attempt}/${retries}):`, error.message);
                 if (attempt === retries) {
-                    return {
-                        success: false,
+                    return { 
+                        success: false, 
                         error: error.message,
-                        demo: true
+                        demo: true 
                     };
                 }
                 // Wait before retry (exponential backoff)
@@ -286,10 +122,80 @@ class EmailService {
         });
     }
 
+    // Process email queue with rate limiting
+    async processQueue() {
+        if (this.sending) return;
+        
+        this.sending = true;
+        
+        while (this.emailQueue.length > 0) {
+            // Check rate limit
+            const now = Date.now();
+            if (now - this.rateLimit.lastReset > 60000) { // 1 minute
+                this.rateLimit.emailsSent = 0;
+                this.rateLimit.lastReset = now;
+            }
+            
+            if (this.rateLimit.emailsSent >= this.rateLimit.maxEmailsPerMinute) {
+                // Wait until next minute
+                const waitTime = 60000 - (now - this.rateLimit.lastReset);
+                console.log(`⏳ Rate limit reached. Waiting ${Math.ceil(waitTime/1000)} seconds...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                continue;
+            }
+            
+            const emailData = this.emailQueue.shift();
+            await this.sendEmailWithRetry(
+                emailData.email, 
+                emailData.subject, 
+                emailData.html,
+                emailData.resolve
+            );
+            this.rateLimit.emailsSent++;
+        }
+        
+        this.sending = false;
+    }
+
+    // Send email with retry mechanism
+    async sendEmailWithRetry(email, subject, html, resolve, retries = 3) {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                const mailOptions = {
+                    from: process.env.EMAIL_FROM || 'KaosSub <noreply@kaossub.com>',
+                    to: email,
+                    subject: subject,
+                    html: html,
+                };
+
+                await this.transporter.sendMail(mailOptions);
+                console.log(`✅ Email sent successfully to: ${email} (Attempt ${attempt})`);
+                
+                resolve({ success: true, demo: false, attempt: attempt });
+                return;
+
+            } catch (error) {
+                console.error(`❌ Email send failed (Attempt ${attempt}/${retries} to ${email}):`, error.message);
+                
+                if (attempt === retries) {
+                    resolve({ 
+                        success: false, 
+                        error: error.message,
+                        demo: false 
+                    });
+                    return;
+                }
+                
+                // Wait before retry (exponential backoff)
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt * attempt));
+            }
+        }
+    }
+
     // Send admin notification email
     async sendAdminNotification(subject, message, retries = 3) {
         const adminEmail = process.env.ADMIN_EMAIL;
-
+        
         if (!adminEmail) {
             console.log('📧 DEMO: Admin notification would be sent:');
             console.log('   - Subject:', subject);
@@ -326,7 +232,7 @@ class EmailService {
     async sendContactNotification(contactData) {
         try {
             const { name, email, message, submitted_at } = contactData;
-
+            
             const emailContent = {
                 to: process.env.ADMIN_EMAIL || 'support@kaossub.com',
                 subject: `New Contact Form Submission from ${name}`,
@@ -387,7 +293,7 @@ class EmailService {
     // Generate beautiful OTP email template
     generateOTPEmailTemplate(otpCode, userName) {
         const expiryMinutes = process.env.OTP_EXPIRY_MINUTES || 10;
-
+        
         return `
         <!DOCTYPE html>
         <html>
@@ -395,32 +301,32 @@ class EmailService {
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                body { 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    margin: 0;
-                    padding: 20px;
+                    margin: 0; 
+                    padding: 20px; 
                     min-height: 100vh;
                 }
-                .container {
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: white;
-                    padding: 40px;
-                    border-radius: 15px;
+                .container { 
+                    max-width: 600px; 
+                    margin: 0 auto; 
+                    background: white; 
+                    padding: 40px; 
+                    border-radius: 15px; 
                     box-shadow: 0 20px 40px rgba(0,0,0,0.1);
                     border: 1px solid #e0e0e0;
                 }
-                .header {
-                    text-align: center;
-                    margin-bottom: 40px;
+                .header { 
+                    text-align: center; 
+                    margin-bottom: 40px; 
                     padding-bottom: 20px;
                     border-bottom: 2px solid #f0f0f0;
                 }
-                .logo {
-                    color: #007bff;
-                    font-size: 32px;
-                    font-weight: bold;
+                .logo { 
+                    color: #007bff; 
+                    font-size: 32px; 
+                    font-weight: bold; 
                     margin-bottom: 10px;
                 }
                 .tagline {
@@ -428,33 +334,33 @@ class EmailService {
                     font-size: 14px;
                     margin-top: 5px;
                 }
-                .otp-code {
+                .otp-code { 
                     background: linear-gradient(135deg, #007bff, #0056b3);
-                    color: white;
-                    padding: 20px;
-                    border-radius: 10px;
-                    font-size: 32px;
-                    font-weight: bold;
-                    text-align: center;
-                    margin: 30px 0;
+                    color: white; 
+                    padding: 20px; 
+                    border-radius: 10px; 
+                    font-size: 32px; 
+                    font-weight: bold; 
+                    text-align: center; 
+                    margin: 30px 0; 
                     letter-spacing: 8px;
                     font-family: 'Courier New', monospace;
                     box-shadow: 0 5px 15px rgba(0,123,255,0.3);
                 }
-                .footer {
-                    margin-top: 40px;
-                    text-align: center;
-                    color: #666;
-                    font-size: 12px;
+                .footer { 
+                    margin-top: 40px; 
+                    text-align: center; 
+                    color: #666; 
+                    font-size: 12px; 
                     padding-top: 20px;
                     border-top: 1px solid #f0f0f0;
                 }
-                .warning {
-                    background: #fff3cd;
-                    border: 1px solid #ffeaa7;
-                    padding: 15px;
-                    border-radius: 8px;
-                    margin: 20px 0;
+                .warning { 
+                    background: #fff3cd; 
+                    border: 1px solid #ffeaa7; 
+                    padding: 15px; 
+                    border-radius: 8px; 
+                    margin: 20px 0; 
                     color: #856404;
                 }
                 .info-box {
@@ -495,12 +401,12 @@ class EmailService {
                 </div>
 
                 <div class="warning">
-                    <strong>⚠️ Security Notice:</strong> This is a sensitive security code.
+                    <strong>⚠️ Security Notice:</strong> This is a sensitive security code. 
                     Do not share it with anyone. KaosSub will never ask for this code.
                 </div>
 
                 <p style="color: #555; line-height: 1.6;">
-                    If you didn't request this OTP, please ignore this email or
+                    If you didn't request this OTP, please ignore this email or 
                     <a href="mailto:support@kaossub.com" style="color: #007bff;">contact our support team</a> immediately.
                 </p>
 
@@ -686,186 +592,198 @@ class EmailService {
         `;
     }
 
+    // Get email service status
+    getStatus() {
+        return {
+            demoMode: this.demoMode,
+            queueLength: this.emailQueue.length,
+            rateLimit: this.rateLimit,
+            sending: this.sending
+        };
+    }
+
     // Clear email queue (for testing)
     clearQueue() {
         this.emailQueue = [];
         console.log('📧 Email queue cleared');
     }
 
-    // Send registration OTP email
-    async sendRegistrationOTPEmail(email, otpCode, userName = 'User') {
-        const subject = 'Verify Your KaosSub Account';
-        const html = this.generateRegistrationOTPEmailTemplate(userName, otpCode);
+// Add this method to the EmailService class in emailService.js
 
-        // Validate email
-        if (!this.validateEmail(email)) {
-            console.error('❌ Invalid email address:', email);
-            return { success: false, error: 'Invalid email address' };
-        }
+// Send registration OTP email
+async sendRegistrationOTPEmail(email, otpCode, userName = 'User') {
+    const subject = 'Verify Your KaosSub Account';
+    const html = this.generateRegistrationOTPEmailTemplate(userName, otpCode);
 
-        // Use queue for rate limiting in production
-        if (!this.demoMode) {
-            return await this.queueEmail(email, subject, html);
-        }
-
-        // Demo mode
-        try {
-            console.log(`📧 DEMO: Registration OTP Email would be sent:`);
-            console.log('   - To:', email);
-            console.log('   - OTP:', otpCode);
-            console.log('   - Subject:', subject);
-            console.log('   - User:', userName);
-
-            return {
-                success: true,
-                demo: true,
-                otp: otpCode,
-                message: 'Demo mode - OTP logged to console'
-            };
-
-        } catch (error) {
-            console.error('❌ Demo registration email send failed:', error.message);
-            return {
-                success: false,
-                error: error.message,
-                demo: true
-            };
-        }
+    // Validate email
+    if (!this.validateEmail(email)) {
+        console.error('❌ Invalid email address:', email);
+        return { success: false, error: 'Invalid email address' };
     }
 
-    // Generate registration OTP email template
-    generateRegistrationOTPEmailTemplate(userName, otpCode) {
-        const expiryMinutes = process.env.OTP_EXPIRY_MINUTES || 10;
+    // Use queue for rate limiting in production
+    if (!this.demoMode) {
+        return await this.queueEmail(email, subject, html);
+    }
 
-        return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    margin: 0;
-                    padding: 20px;
-                    min-height: 100vh;
-                }
-                .container {
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: white;
-                    padding: 40px;
-                    border-radius: 15px;
-                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-                    border: 1px solid #e0e0e0;
-                }
-                .header {
-                    text-align: center;
-                    margin-bottom: 40px;
-                    padding-bottom: 20px;
-                    border-bottom: 2px solid #f0f0f0;
-                }
-                .logo {
-                    color: #007bff;
-                    font-size: 32px;
-                    font-weight: bold;
-                    margin-bottom: 10px;
-                }
-                .tagline {
-                    color: #666;
-                    font-size: 14px;
-                    margin-top: 5px;
-                }
-                .otp-code {
-                    background: linear-gradient(135deg, #28a745, #20c997);
-                    color: white;
-                    padding: 20px;
-                    border-radius: 10px;
-                    font-size: 32px;
-                    font-weight: bold;
-                    text-align: center;
-                    margin: 30px 0;
-                    letter-spacing: 8px;
-                    font-family: 'Courier New', monospace;
-                    box-shadow: 0 5px 15px rgba(40,167,69,0.3);
-                }
-                .footer {
-                    margin-top: 40px;
-                    text-align: center;
-                    color: #666;
-                    font-size: 12px;
-                    padding-top: 20px;
-                    border-top: 1px solid #f0f0f0;
-                }
-                .info-box {
-                    background: #d1ecf1;
-                    border: 1px solid #bee5eb;
-                    padding: 15px;
-                    border-radius: 8px;
-                    margin: 20px 0;
-                    color: #0c5460;
-                }
-                .user-greeting {
-                    font-size: 18px;
-                    color: #333;
-                    margin-bottom: 20px;
-                }
-                .welcome-text {
-                    color: #555;
-                    line-height: 1.6;
-                    margin-bottom: 20px;
-                }
-                @media (max-width: 600px) {
-                    .container { padding: 20px; margin: 10px; }
-                    .otp-code { font-size: 24px; padding: 15px; letter-spacing: 5px; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <div class="logo">KaosSub</div>
-                    <div class="tagline">Affordable Data Subscriptions</div>
-                    <h2 style="color: #333; margin-top: 20px;">Verify Your Account</h2>
-                </div>
+    // Demo mode
+    try {
+        console.log(`📧 DEMO: Registration OTP Email would be sent:`);
+        console.log('   - To:', email);
+        console.log('   - OTP:', otpCode);
+        console.log('   - Subject:', subject);
+        console.log('   - User:', userName);
 
-                <p class="user-greeting">Hello <strong>${userName}</strong>,</p>
+        return {
+            success: true,
+            demo: true,
+            otp: otpCode,
+            message: 'Demo mode - OTP logged to console'
+        };
 
-                <p class="welcome-text">Welcome to KaosSub! We're excited to have you on board. To complete your registration and start purchasing data bundles, please verify your email address using the OTP code below:</p>
+    } catch (error) {
+        console.error('❌ Demo registration email send failed:', error.message);
+        return {
+            success: false,
+            error: error.message,
+            demo: true
+        };
+    }
+}
 
-                <div class="otp-code">${otpCode}</div>
+// Generate registration OTP email template
+generateRegistrationOTPEmailTemplate(userName, otpCode) {
+    const expiryMinutes = process.env.OTP_EXPIRY_MINUTES || 10;
 
-                <div class="info-box">
-                    <strong>⏰ Code Expiry:</strong> This OTP will expire in ${expiryMinutes} minutes.
-                </div>
-
-                <p class="welcome-text">
-                    Once verified, you'll be able to:
-                </p>
-                <ul style="color: #555; line-height: 1.6;">
-                    <li>Purchase data bundles for all Nigerian networks</li>
-                    <li>Fund your wallet securely</li>
-                    <li>Track your order history</li>
-                    <li>Enjoy fast and reliable data services</li>
-                </ul>
-
-                <p class="welcome-text">
-                    If you didn't request this verification, please ignore this email.
-                </p>
-
-                <div class="footer">
-                    <p>&copy; 2024 KaosSub. All rights reserved.</p>
-                    <p>This is an automated message, please do not reply to this email.</p>
-                    <p style="margin-top: 10px; font-size: 11px; color: #999;">
-                        KaosSub Data Services • Secure Account Verification
-                    </p>
-                </div>
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0;
+                padding: 20px;
+                min-height: 100vh;
+            }
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                padding: 40px;
+                border-radius: 15px;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                border: 1px solid #e0e0e0;
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 40px;
+                padding-bottom: 20px;
+                border-bottom: 2px solid #f0f0f0;
+            }
+            .logo {
+                color: #007bff;
+                font-size: 32px;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+            .tagline {
+                color: #666;
+                font-size: 14px;
+                margin-top: 5px;
+            }
+            .otp-code {
+                background: linear-gradient(135deg, #28a745, #20c997);
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                font-size: 32px;
+                font-weight: bold;
+                text-align: center;
+                margin: 30px 0;
+                letter-spacing: 8px;
+                font-family: 'Courier New', monospace;
+                box-shadow: 0 5px 15px rgba(40,167,69,0.3);
+            }
+            .footer {
+                margin-top: 40px;
+                text-align: center;
+                color: #666;
+                font-size: 12px;
+                padding-top: 20px;
+                border-top: 1px solid #f0f0f0;
+            }
+            .info-box {
+                background: #d1ecf1;
+                border: 1px solid #bee5eb;
+                padding: 15px;
+                border-radius: 8px;
+                margin: 20px 0;
+                color: #0c5460;
+            }
+            .user-greeting {
+                font-size: 18px;
+                color: #333;
+                margin-bottom: 20px;
+            }
+            .welcome-text {
+                color: #555;
+                line-height: 1.6;
+                margin-bottom: 20px;
+            }
+            @media (max-width: 600px) {
+                .container { padding: 20px; margin: 10px; }
+                .otp-code { font-size: 24px; padding: 15px; letter-spacing: 5px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="logo">KaosSub</div>
+                <div class="tagline">Affordable Data Subscriptions</div>
+                <h2 style="color: #333; margin-top: 20px;">Verify Your Account</h2>
             </div>
-        </body>
-        </html>
-        `;
-    }
+
+            <p class="user-greeting">Hello <strong>${userName}</strong>,</p>
+
+            <p class="welcome-text">Welcome to KaosSub! We're excited to have you on board. To complete your registration and start purchasing data bundles, please verify your email address using the OTP code below:</p>
+
+            <div class="otp-code">${otpCode}</div>
+
+            <div class="info-box">
+                <strong>⏰ Code Expiry:</strong> This OTP will expire in ${expiryMinutes} minutes.
+            </div>
+
+            <p class="welcome-text">
+                Once verified, you'll be able to:
+            </p>
+            <ul style="color: #555; line-height: 1.6;">
+                <li>Purchase data bundles for all Nigerian networks</li>
+                <li>Fund your wallet securely</li>
+                <li>Track your order history</li>
+                <li>Enjoy fast and reliable data services</li>
+            </ul>
+
+            <p class="welcome-text">
+                If you didn't request this verification, please ignore this email.
+            </p>
+
+            <div class="footer">
+                <p>&copy; 2024 KaosSub. All rights reserved.</p>
+                <p>This is an automated message, please do not reply to this email.</p>
+                <p style="margin-top: 10px; font-size: 11px; color: #999;">
+                    KaosSub Data Services • Secure Account Verification
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+}
 }
 
 module.exports = new EmailService();
