@@ -30,7 +30,7 @@ A complete data subscription platform for Nigerian networks with Paystack paymen
 ### Prerequisites
 - Node.js (v14 or higher)
 - npm or yarn
-- MySQL database
+- Supabase database
 - Paystack account
 
 ### Installation
@@ -38,7 +38,7 @@ A complete data subscription platform for Nigerian networks with Paystack paymen
 1. **Clone the repository**
 ```bash
 git clone https://github.com/KAOS-CODM/KaosSub.git
-cd KaosSub
+cd KaosSub-Clean
 ```
 
 1. Backend Setup
@@ -95,44 +95,44 @@ KaosSub-Clean/
 └── 📄 README.md           # Project documentation
 ```
 
-🛠️ Technology Stack
+## 🛠️ Technology Stack
 
-Backend
+### Backend
 
-· Node.js - Runtime environment
-· Express.js - Web framework
-· JWT - Authentication
-· MySQL - Database
-· Paystack API - Payment processing
+- Node.js - Runtime environment
+- Express.js - Web framework
+- JWT - Authentication
+- MySQL - Database
+- Paystack API - Payment processing
 
-Frontend
+### Frontend
 
-· HTML5 - Markup
-· CSS3 - Styling
-· Vanilla JavaScript - Client-side functionality
-· Responsive Design - Mobile-first approach
+- HTML5 - Markup
+- CSS3 - Styling
+- Vanilla JavaScript - Client-side functionality
+- Responsive Design - Mobile-first approach
 
-🔧 API Endpoints
+### 🔧 API Endpoints
 
-Authentication
+#### Authentication
 
-· POST /api/auth/register - User registration
-· POST /api/auth/login - User login
-· POST /api/auth/logout - User logout
+- POST /api/auth/register - User registration
+- POST /api/auth/login - User login
+- POST /api/auth/logout - User logout
 
-Data Services
+#### Data Services
 
-· GET /api/data/plans - Get available data plans
-· POST /api/data/purchase - Purchase data plan
-· GET /api/data/history - Get purchase history
+- GET /api/data/plans - Get available data plans
+- POST /api/data/purchase - Purchase data plan
+- GET /api/data/history - Get purchase history
 
-Wallet & Payments
+#### Wallet & Payments
 
-· GET /api/wallet/balance - Get wallet balance
-· POST /api/wallet/fund - Fund wallet via Paystack
-· POST /api/webhook/paystack - Paystack webhook
+- GET /api/wallet/balance - Get wallet balance
+- POST /api/wallet/fund - Fund wallet via Paystack
+- POST /api/webhook/paystack - Paystack webhook
 
-🤝 Contributing
+### 🤝 Contributing
 
 1. Fork the repository
 2. Create your feature branch (git checkout -b feature/AmazingFeature)
@@ -140,23 +140,23 @@ Wallet & Payments
 4. Push to the branch (git push origin feature/AmazingFeature)
 5. Open a Pull Request
 
-📄 License
+### 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-📞 Support
+###  📞 Support
 
-For support and queries:
+#### For support and queries:
 
-· Create an issue on GitHub
-· Contact the development team
+- Create an issue on GitHub
+- Contact the development team
 
-🔗 Links
+### 🔗 Links
 
-· Live Demo
-· API Documentation
-· Frontend Repository
-· Backend Repository
+- Live Demo
+- API Documentation
+- Frontend Repository
+- Backend Repository
 
 ---
 
