@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - KaosSub</title>
+    <!--Favicon-->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon/favicon.ico">
+    <link rel="icon" type="image/png" href="/assets/favicon/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon/favicon.svg">
+    <link rel="apple-touch-icon" href="/assets/favicon/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon/favicon.svg">
+    <meta name="theme-color" content="#dc3545">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 2rem;
+        }
+        
+        .auth-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .auth-header h2 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .auth-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .otp-section {
+            margin: 1rem 0;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            font-size: 14px;
+        }
+        
+        .otp-input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .otp-input {
+            flex: 1;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 3px;
+        }
+        
+        .get-otp-btn {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .get-otp-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,123,255,0.3);
+        }
+        
+        .get-otp-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .otp-timer {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            text-align: center;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .email-notice {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/js/url-config.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>KaosSub</h1>
+            <nav style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem;">
+                <a href="/" style="text-decoration: none; color: #333; font-weight: 500;">Home</a>
+                <a href="/about" style="text-decoration: none; color: #333; font-weight: 500;">About</a>
+                <a href="/data-plans" style="text-decoration: none; color: #333; font-weight: 500;">Data Plans</a>
+                <a href="/contact" style="text-decoration: none; color: #333; font-weight: 500;">Contact</a>
+            </nav>
+        </header>
+        
+        <main>
+            <div class="auth-container">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <h2>Create Account</h2>
+                        <p>Join KaosSub today</p>
+                    </div>
+                    
+                    <form id="registerForm">
+                        <div class="form-group">
+                            <label for="full_name">Full Name</label>
+                            <input type="text" id="full_name" class="form-control" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" class="form-control" required>
+                            <div class="otp-input-group">
+                                <button type="button" id="getOtpBtn" class="get-otp-btn" onclick="requestRegistrationOTP()">
+                                    Get OTP
+                                </button>
+                            </div>
+                            <div id="otpMessage" style="margin-top: 10px; font-size: 14px;"></div>
+                        </div>
+                        
+                        <!-- OTP Email Delivery Notice -->
+                        <div class="email-notice hidden" id="emailNotice">
+                            <strong>📧 Check Your Email:</strong> 
+                            <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+                                <li>OTP sent to <strong id="userEmailDisplay"></strong></li>
+                                <li>Can't find it? Check your <strong>spam folder</strong></li>
+                                <li>Mark as "Not Spam" to ensure future emails arrive in inbox</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="otp-section hidden" id="otpSection">
+                            <label for="otp_code">Enter OTP</label>
+                            <div class="otp-input-group">
+                                <input type="text" id="otp_code" class="form-control otp-input" maxlength="6" placeholder="000000" required>
+                            </div>
+                            <div class="otp-timer" id="otpTimer">OTP valid for: 10:00</div>
+                            <div id="otpError" style="color: #dc3545; font-size: 14px; margin-top: 5px;"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="phone_number">Phone Number</label>
+                            <input type="tel" id="phone_number" class="form-control" placeholder="08012345678">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <div class="password-input-container">
+                                <input type="password" id="password" class="form-control" required minlength="6">
+                                <button type="button" class="toggle-password" aria-label="Show password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <small style="color: #666;">Must be at least 6 characters</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirm_password">Confirm Password</label>
+                            <div class="password-input-container">
+                                <input type="password" id="confirm_password" class="form-control" required>
+                                <button type="button" class="toggle-password" aria-label="Show password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn" style="width: 100%;">Create Account</button>
+                    </form>
+                    
+                    <div class="auth-footer">
+                        <p>Already have an account? <a href="/login">Sign in here</a></p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="js/utils.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        let otpTimerInterval;
+        let otpExpiresAt;
+        
+        // Request OTP for registration - Robust version
+        async function requestRegistrationOTP() {
+            const email = document.getElementById('email').value;
+            const fullName = document.getElementById('full_name').value;
+            const getOtpBtn = document.getElementById('getOtpBtn');
+            const otpMessage = document.getElementById('otpMessage');
+            const emailNotice = document.getElementById('emailNotice');
+
+            if (!email) {
+                showOtpMessage('Please enter your email address first', 'error');
+                return;
+            }
+            
+            if (!Utils.validateEmail(email)) {
+                showOtpMessage('Please enter a valid email address', 'error');
+                return;
+            }
+            
+            try {
+                const originalText = Utils.showLoading(getOtpBtn, 'Sending...');
+                
+                // ✅ UPDATE: Show email notice with user's email
+                document.getElementById('userEmailDisplay').textContent = email;
+                emailNotice.classList.remove('hidden');
+
+                const response = await Utils.apiRequest('/api/auth/request-registration-otp', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        email: email,
+                        full_name: fullName || 'User'
+                    })
+                });
+                
+                console.log('🔍 Full OTP Response:', response);
+                
+                // ✅ FIXED: Check response structure more carefully
+                if (response && response.success) {
+                    showOtpMessage('OTP sent to your email! Check your inbox.', 'success');
+                    
+                    // Show OTP section
+                    document.getElementById('otpSection').classList.remove('hidden');
+                    
+                    // ✅ FIXED: Handle multiple possible response structures
+                    let expiresAt;
+                    
+                    if (response.data && response.data.expires_at) {
+                        expiresAt = response.data.expires_at;
+                    } else if (response.expires_at) {
+                        expiresAt = response.expires_at;
+                    } else {
+                        // Default: 10 minutes from now
+                        expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+                        console.log('⚠️ Using default expiration time');
+                    }
+                    
+                    console.log('⏰ OTP expires at:', expiresAt);
+                    
+                    // Start OTP timer
+                    startOTPTimer(expiresAt);
+                    
+                    // Disable OTP button for 60 seconds
+                    getOtpBtn.disabled = true;
+                    setTimeout(() => {
+                        getOtpBtn.disabled = false;
+                        Utils.hideLoading(getOtpBtn, 'Get OTP');
+                    }, 60000);
+                    
+                } else {
+                    // Handle different error response structures
+                    const errorMessage = response?.error ||
+                                       response?.message ||
+                                       'Failed to send OTP. Please try again.';
+                    throw new Error(errorMessage);
+                }
+                
+            } catch (error) {
+                console.error('❌ OTP Request Failed:', error);
+                
+                let userMessage = error.message;
+                if (error.message.includes('Network') || error.message.includes('Failed to fetch')) {
+                    userMessage = 'Network error. Please check your connection and try again.';
+                } else if (error.message.includes('email already registered')) {
+                    userMessage = 'This email is already registered. Please use a different email or login.';
+                }
+                
+                showOtpMessage(userMessage, 'error');
+                Utils.hideLoading(getOtpBtn, 'Get OTP');
+            }
+        }
+        
+        // Start OTP countdown timer
+        function startOTPTimer(expiresAt) {
+            // ✅ Handle both string and Date objects
+            if (typeof expiresAt === 'string') {
+                otpExpiresAt = new Date(expiresAt);
+            } else if (expiresAt instanceof Date) {
+                otpExpiresAt = expiresAt;
+            } else {
+                // Fallback: 10 minutes from now
+                otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+                console.warn('⚠️ Invalid expiration time, using default');
+            }
+            
+            console.log('⏰ Timer started, OTP expires at:', otpExpiresAt);
+            
+            clearInterval(otpTimerInterval);
+            otpTimerInterval = setInterval(updateOTPTimer, 1000);
+            updateOTPTimer();
+        }
+        
+        // Update OTP timer display
+        function updateOTPTimer() {
+            const now = new Date();
+            const timeLeft = otpExpiresAt - now;
+            
+            if (timeLeft <= 0) {
+                clearInterval(otpTimerInterval);
+                document.getElementById('otpTimer').textContent = 'OTP expired';
+                document.getElementById('otpTimer').style.color = '#dc3545';
+                return;
+            }
+            
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            document.getElementById('otpTimer').textContent = `OTP valid for: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeLeft < 60000) { // Less than 1 minute
+                document.getElementById('otpTimer').style.color = '#dc3545';
+            }
+        }
+        
+        // Show OTP message
+        function showOtpMessage(message, type) {
+            const otpMessage = document.getElementById('otpMessage');
+            otpMessage.textContent = message;
+            otpMessage.style.color = type === 'success' ? '#28a745' : '#dc3545';
+            otpMessage.style.display = 'block';
+        }
+        
+        // Show OTP error
+        function showOtpError(message) {
+            const otpError = document.getElementById('otpError');
+            otpError.textContent = message;
+            otpError.style.display = 'block';
+        }
+        
+        // Clear OTP error
+        function clearOtpError() {
+            const otpError = document.getElementById('otpError');
+            otpError.textContent = '';
+            otpError.style.display = 'none';
+        }
+
+        // Handle form submission
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const button = e.target.querySelector('button[type="submit"]');
+            const originalText = Utils.showLoading(button);
+            
+            try {
+                const full_name = document.getElementById('full_name').value;
+                const email = document.getElementById('email').value;
+                const phone_number = document.getElementById('phone_number').value;
+                const password = document.getElementById('password').value;
+                const confirm_password = document.getElementById('confirm_password').value;
+                const otp_code = document.getElementById('otp_code').value;
+                
+                // Validation
+                if (password !== confirm_password) {
+                    throw new Error('Passwords do not match');
+                }
+                
+                if (!Utils.validateEmail(email)) {
+                    throw new Error('Please enter a valid email address');
+                }
+                
+                if (phone_number && !Utils.validatePhone(phone_number)) {
+                    throw new Error('Phone number must be 11 digits');
+                }
+                
+                if (!otp_code || otp_code.length !== 6) {
+                    throw new Error('Please enter the 6-digit OTP code');
+                }
+                
+                const response = await Utils.apiRequest('/api/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                        full_name: full_name,
+                        phone_number: phone_number,
+                        otp_code: otp_code
+                    })
+                });
+                
+                // Debug logging
+                console.log('🔍 FULL SIGNUP RESPONSE:', response);
+                console.log('🔍 Response keys:', Object.keys(response));
+                console.log('🔍 Response.data keys:', response.data ? Object.keys(response.data) : 'No data');
+                console.log('🔍 Response.data.session:', response.data?.session);
+                
+                if (response.success) {
+                    // ✅ SEND WELCOME EMAIL
+                    try {
+                        await Utils.apiRequest('/api/email/send-welcome', 'POST', {
+                            email: email,
+                            userName: full_name || email
+                        });
+                    } catch (emailError) {
+                        console.log('Welcome email optional:', emailError.message);
+                    }
+                    
+                    // FIXED: Proper token extraction for signup
+                    const accessToken = response.data?.session?.access_token ||
+                                       response.data?.access_token ||
+                                       response.access_token ||
+                                       response.data?.session?.accessToken ||
+                                       response.data?.token;
+                    
+                    console.log('🔑 Signup - Raw response:', response);
+                    console.log('🔑 Signup - Extracted token:', accessToken);
+                    
+                    if (accessToken) {
+                        localStorage.setItem('authToken', accessToken);
+                        localStorage.setItem('userProfile', JSON.stringify(response.data.profile));
+                        localStorage.setItem('userBalance', response.data.profile.balance);
+                        
+                        Utils.showAlert('Signup successful! Redirecting...', 'success');
+                        
+                        // Redirect to dashboard
+                        setTimeout(() => {
+                            window.location.href = '/dashboard';
+                        }, 1000);
+                    } else {
+                        // If no token but registration was successful, redirect to login
+                        console.log('🔄 Registration successful but no token, redirecting to login');
+                        Utils.showAlert('Account created successfully! Please log in.', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/login';
+                        }, 2000);
+                    }
+                } else {
+                    throw new Error(response.error || 'Signup failed');
+                }
+                
+            } catch (error) {
+                Utils.showAlert(error.message, 'error');
+            } finally {
+                Utils.hideLoading(button, originalText);
+            }
+        });
+        
+        // Clear OTP error when typing
+        document.getElementById('otp_code').addEventListener('input', clearOtpError);
+        
+        // Add this to your signup page script
+        document.addEventListener('DOMContentLoaded', function() {
+            Utils.initializePasswordToggles();
+        });
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Load Footer Component -->
+    <script src="/js/components/footer.js"></script>
+    <!-- Form Handler -->
+    <script src="/js/components/simple-form-handler.js"></script>
+</body>
+</html>

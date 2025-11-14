@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - KaosSub</title>
+    <!--Favicon-->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon/favicon.ico">
+    <link rel="icon" type="image/png" href="/assets/favicon/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon/favicon.svg">
+    <link rel="apple-touch-icon" href="/assets/favicon/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon/favicon.svg">
+    <meta name="theme-color" content="#dc3545">
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .error-container {
+            text-align: center;
+            padding: 4rem 2rem;
+            min-height: 60vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .error-code {
+            font-size: 8rem;
+            font-weight: bold;
+            color: #dc3545;
+            margin-bottom: 1rem;
+            line-height: 1;
+        }
+        
+        .error-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .error-message {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 2rem;
+            max-width: 500px;
+        }
+        
+        .error-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .btn-home {
+            background: #dc3545;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        .btn-home:hover {
+            background: #c82333;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        @media (max-width: 768px) {
+            .error-code {
+                font-size: 6rem;
+            }
+            
+            .error-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/js/url-config.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header style="padding: 1rem 0; border-bottom: 1px solid #eee;">
+            <nav style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: #dc3545;">
+                    KaosSub
+                </div>
+                <div>
+                    <a href="/" style="margin-right: 1rem; text-decoration: none; color: #333;">Home</a>
+                    <a href="/data-plans" style="margin-right: 1rem; text-decoration: none; color: #333;">Data Plans</a>
+                    <a href="/login" style="text-decoration: none; color: #333;">Login</a>
+                </div>
+            </nav>
+        </header>
+
+        <main>
+            <div class="error-container">
+                <div class="error-code">404</div>
+                <h1 class="error-title">Page Not Found</h1>
+                <p class="error-message">
+                    Sorry, the page you are looking for doesn't exist or has been moved.
+                </p>
+                <div class="error-actions">
+                    <a href="/" class="btn-home">Go to Homepage</a>
+                    <a href="/data-plans" class="btn-secondary">View Data Plans</a>
+                    <a href="javascript:history.back()" class="btn-secondary">Go Back</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Load Footer Component -->
+    <script src="/js/components/footer.js"></script>
+    
+    <!-- Form Handler -->
+    <script src="/js/components/simple-form-handler.js"></script>
+    <!-- Form Handler -->
+</body>
+</html>

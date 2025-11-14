@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Verification - KaosSub</title>
+    <!--Favicon-->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon/favicon.ico">
+    <link rel="icon" type="image/png" href="/assets/favicon/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon/favicon.svg">
+    <link rel="apple-touch-icon" href="/assets/favicon/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon/favicon.svg">
+    <meta name="theme-color" content="#dc3545">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .verification-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .verification-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .verification-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .verification-success {
+            color: #28a745;
+        }
+
+        .verification-error {
+            color: #dc3545;
+        }
+
+        .verification-processing {
+            color: #ffc107;
+        }
+
+        .verification-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .verification-message {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .verification-button {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .verification-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        }
+
+        .verification-button-secondary {
+            background: linear-gradient(135deg, #6c757d, #545b62);
+        }
+
+        .verification-button-secondary:hover {
+            box-shadow: 0 5px 15px rgba(108,117,125,0.3);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .balance-update {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+
+        .email-notice {
+            background: linear-gradient(135deg, #e7f3ff, #cfe2ff);
+            color: #0056b3;
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .countdown-text {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .verification-container {
+                padding: 10px;
+            }
+
+            .verification-card {
+                padding: 25px;
+            }
+
+            .verification-title {
+                font-size: 1.5rem;
+            }
+
+            .verification-icon {
+                font-size: 3rem;
+            }
+        }
+    </style>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/js/url-config.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>KaosSub</h1>
+            <nav style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem;">
+                <a href="/" style="text-decoration: none; color: #333; font-weight: 500;">Home</a>
+                <a href="/dashboard" style="text-decoration: none; color: #333; font-weight: 500;">Dashboard</a>
+                <a href="/data-plans" style="text-decoration: none; color: #333; font-weight: 500;">Data Plans</a>
+                <a href="/contact" style="text-decoration: none; color: #333; font-weight: 500;">Contact</a>
+            </nav>
+        </header>
+
+        <main>
+            <div class="verification-container">
+                <!-- Loading Section -->
+                <div id="loading-section" class="verification-card">
+                    <div class="spinner"></div>
+                    <div class="verification-icon verification-processing">
+                        <i class="fas fa-spinner"></i>
+                    </div>
+                    <h2 class="verification-title verification-processing">Verifying Payment</h2>
+                    <p class="verification-message">Please wait while we verify your payment transaction.</p>
+                </div>
+
+                <!-- Success Section -->
+                <div id="success-section" class="verification-card hidden">
+                    <div class="verification-icon verification-success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2 class="verification-title verification-success">Payment Successful! 🎉</h2>
+                    <p class="verification-message" id="success-message">Your payment has been verified successfully.</p>
+                    <div id="countdown-message" class="countdown-text"></div>
+                    <div id="balance-update" class="balance-update hidden">
+                        New Balance: <span id="new-balance-amount">₦0.00</span>
+                    </div>
+                    <div id="email-notice" class="email-notice hidden">
+                        <i class="fas fa-envelope"></i>
+                        <strong>Order confirmation sent to your email.</strong>
+                        Check spam folder if not received.
+                    </div>
+                    <button onclick="cleanupAndRedirect()" class="verification-button">
+                        <i class="fas fa-tachometer-alt"></i> Return to Dashboard Now
+                    </button>
+                    <div style="margin-top: 15px;">
+                        <button onclick="window.location.href = '/data-plans'" class="verification-button verification-button-secondary">
+                            <i class="fas fa-wifi"></i> Buy Data Now
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Error Section -->
+                <div id="error-section" class="verification-card hidden">
+                    <div class="verification-icon verification-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <h2 class="verification-title verification-error">Payment Failed</h2>
+                    <p class="verification-message" id="error-message">There was an issue verifying your payment.</p>
+                    <div id="error-countdown" class="countdown-text"></div>
+                    <button onclick="cleanupAndRedirect()" class="verification-button verification-button-secondary">
+                        <i class="fas fa-tachometer-alt"></i> Return to Dashboard
+                    </button>
+                    <div style="margin-top: 15px;">
+                        <button onclick="window.location.href = '/dashboard#wallet'" class="verification-button">
+                            <i class="fas fa-wallet"></i> Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Load ALL external scripts FIRST -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/app.js"></script>
+
+    <script>
+        // Enhanced Payment Verification with Auto-Redirect
+        let paymentProcessed = false;
+        let redirectTimer = null;
+        let countdownInterval = null;
+
+        // Enhanced cleanup and redirect function
+        function cleanupAndRedirect() {
+            console.log('🔄 Cleaning up and redirecting to dashboard...');
+            
+            // Clear any existing timers
+            if (redirectTimer) {
+                clearTimeout(redirectTimer);
+                redirectTimer = null;
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
+            // Remove reference from URL without reloading
+            if (window.history.replaceState) {
+                const newUrl = window.location.pathname; // Remove query parameters
+                window.history.replaceState({}, document.title, newUrl);
+            }
+            
+            // Redirect to dashboard
+            window.location.href = '/dashboard';
+        }
+
+        // Enhanced showSuccess function with amount parameter
+        function showSuccess(message, newBalance = null, amount = null) {
+            paymentProcessed = true;
+            
+            const loadingSection = document.getElementById('loading-section');
+            const successSection = document.getElementById('success-section');
+            const successMessage = document.getElementById('success-message');
+            const balanceUpdate = document.getElementById('balance-update');
+            const newBalanceAmount = document.getElementById('new-balance-amount');
+            const emailNotice = document.getElementById('email-notice');
+            const countdownMessage = document.getElementById('countdown-message');
+
+            if (loadingSection) loadingSection.classList.add('hidden');
+            if (successSection) successSection.classList.remove('hidden');
+            if (successMessage) successMessage.textContent = message;
+
+            if (newBalance && balanceUpdate && newBalanceAmount) {
+                newBalanceAmount.textContent = Utils.formatCurrency(newBalance);
+                balanceUpdate.classList.remove('hidden');
+                
+                // Update localStorage with new balance immediately
+                localStorage.setItem('userBalance', newBalance.toString());
+                console.log('💰 Updated user balance in localStorage:', newBalance);
+                
+                // Show countdown and auto-redirect
+                let countdown = 5;
+                if (countdownMessage) {
+                    countdownMessage.textContent = `Redirecting to dashboard in ${countdown} seconds...`;
+                }
+                
+                countdownInterval = setInterval(() => {
+                    countdown--;
+                    if (countdownMessage) {
+                        countdownMessage.textContent = `Redirecting to dashboard in ${countdown} seconds...`;
+                    }
+                    if (countdown <= 0) {
+                        clearInterval(countdownInterval);
+                        cleanupAndRedirect();
+                    }
+                }, 1000);
+
+                // ✅ FIXED: Send WALLET TOP-UP confirmation email with correct amount
+                setTimeout(async () => {
+                    try {
+                        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const reference = urlParams.get('reference');
+                        
+                        // ✅ Use the actual amount from API response instead of calculating
+                        const topupAmount = amount || (newBalance - parseFloat(localStorage.getItem('userBalance') || 0));
+                        
+                        const topupDetails = {
+                            reference: reference, // ✅ Use the actual reference from URL (Paystack reference)
+                            amount: topupAmount, // ✅ Use the actual amount from API
+                            status: 'success'
+                        };
+
+                        console.log('📧 Sending wallet top-up email:', {
+                            email: userProfile.email,
+                            topupAmount: topupAmount,
+                            reference: topupDetails.reference
+                        });
+
+                        await Utils.apiRequest('/api/email/send-wallet-topup', 'POST', {
+                            email: userProfile.email,
+                            topupDetails: topupDetails,
+                            userName: userProfile.full_name || 'Customer'
+                        });
+
+                        emailNotice.classList.remove('hidden');
+                        console.log('📧 Wallet top-up email sent successfully');
+                    } catch (emailError) {
+                        console.log('Wallet top-up confirmation email optional:', emailError.message);
+                    }
+                }, 1000);
+            }
+        }
+
+        // Enhanced showError function
+        function showError(message) {
+            paymentProcessed = true;
+            
+            const loadingSection = document.getElementById('loading-section');
+            const errorSection = document.getElementById('error-section');
+            const errorMessage = document.getElementById('error-message');
+            const errorCountdown = document.getElementById('error-countdown');
+
+            if (loadingSection) loadingSection.classList.add('hidden');
+            if (errorSection) errorSection.classList.remove('hidden');
+            if (errorMessage) errorMessage.textContent = message;
+            
+            // Auto-redirect on error too after 5 seconds
+            let countdown = 5;
+            if (errorCountdown) {
+                errorCountdown.textContent = `Redirecting to dashboard in ${countdown} seconds...`;
+            }
+            
+            countdownInterval = setInterval(() => {
+                countdown--;
+                if (errorCountdown) {
+                    errorCountdown.textContent = `Redirecting to dashboard in ${countdown} seconds...`;
+                }
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    cleanupAndRedirect();
+                }
+            }, 1000);
+        }
+
+        // Clean up old processed payments (older than 1 day)
+        function cleanupProcessedPayments() {
+            const processedPayments = JSON.parse(localStorage.getItem('processedPayments') || '{}');
+            const now = Date.now();
+            const oneDay = 24 * 60 * 60 * 1000;
+
+            Object.keys(processedPayments).forEach(reference => {
+                if (now - processedPayments[reference].timestamp > oneDay) {
+                    delete processedPayments[reference];
+                }
+            });
+
+            localStorage.setItem('processedPayments', JSON.stringify(processedPayments));
+        }
+
+        // Main verification function with improved amount handling
+        async function verifyPayment() {
+            try {
+                // Prevent duplicate verification
+                if (paymentProcessed) {
+                    console.log('🔄 Payment already processed, redirecting...');
+                    cleanupAndRedirect();
+                    return;
+                }
+
+                // Check if Utils is available
+                if (typeof Utils === 'undefined') {
+                    throw new Error('Authentication system not loaded');
+                }
+
+                // Check authentication
+                if (!Utils.requireAuth()) {
+                    return; // redirectToLogin was called
+                }
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const reference = urlParams.get('reference');
+
+                if (!reference) {
+                    throw new Error('No payment reference found in URL');
+                }
+
+                // Check localStorage to prevent duplicate processing
+                const processedPayments = JSON.parse(localStorage.getItem('processedPayments') || '{}');
+                if (processedPayments[reference]) {
+                    console.log('🔄 Payment already processed in localStorage, redirecting...');
+                    showSuccess('Payment already processed!', processedPayments[reference].new_balance, processedPayments[reference].amount);
+                    return;
+                }
+
+                // Call backend to verify payment
+                console.log('🔄 Verifying payment with reference:', reference);
+                const response = await Utils.apiRequest(`/api/wallet/verify-payment/${reference}`);
+
+                if (response && response.success) {
+                    paymentProcessed = true;
+
+                    // ✅ IMPROVED: Capture amount and new balance from API response
+                    const amount = response.data ? response.data.amount : null;
+                    const newBalance = response.data ? response.data.new_balance : null;
+
+                    // Mark as processed in localStorage
+                    processedPayments[reference] = {
+                        verified: true,
+                        timestamp: Date.now(),
+                        new_balance: newBalance,
+                        amount: amount // ✅ Store the actual amount too
+                    };
+                    localStorage.setItem('processedPayments', JSON.stringify(processedPayments));
+
+                    let successMessage = `Payment of ${Utils.formatCurrency(amount)} verified successfully!`;
+                    if (newBalance) {
+                        successMessage = `Payment of ${Utils.formatCurrency(amount)} verified successfully! Your wallet balance has been updated.`;
+                    }
+
+                    // ✅ PASS THE ACTUAL AMOUNT TO showSuccess
+                    showSuccess(successMessage, newBalance, amount);
+                } else {
+                    throw new Error(response ? response.error : 'Payment verification failed');
+                }
+            } catch (error) {
+                console.error('❌ Payment verification error:', error);
+                showError(error.message || 'An unexpected error occurred while verifying your payment. Please try again or contact support if the issue persists.');
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const reference = urlParams.get('reference');
+            
+            // If no reference parameter, redirect immediately
+            if (!reference) {
+                console.log('❌ No payment reference found, redirecting to dashboard...');
+                window.location.href = '/dashboard';
+                return;
+            }
+            
+            // Check if this payment was already processed
+            const processedPayments = JSON.parse(localStorage.getItem('processedPayments') || '{}');
+            if (processedPayments[reference]) {
+                console.log('🔄 Payment already processed, redirecting to dashboard...');
+                showSuccess('Payment already processed!', processedPayments[reference].new_balance, processedPayments[reference].amount);
+                return;
+            }
+            
+            // Proceed with normal verification
+            cleanupProcessedPayments();
+            verifyPayment();
+        });
+
+        // Prevent navigation away if payment is being processed
+        window.addEventListener('beforeunload', function(e) {
+            if (!paymentProcessed) {
+                // Show confirmation dialog if user tries to leave during processing
+                e.preventDefault();
+                e.returnValue = 'Payment verification is in progress. Are you sure you want to leave?';
+                return 'Payment verification is in progress. Are you sure you want to leave?';
+            }
+        });
+    </script>
+
+    <!-- Load Footer Component -->
+    <script src="/js/components/footer.js"></script>
+    <!-- Hamburger Menu -->
+    <script src="/js/components/hamburger-menu.js"></script>
+    <!-- Form Handler -->
+    <script src="/js/components/simple-form-handler.js"></script>
+</body>
+</html>

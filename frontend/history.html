@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History - KaosSub</title>
+    <!--Favicon-->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon/favicon.ico">
+    <link rel="icon" type="image/png" href="/assets/favicon/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon/favicon.svg">
+    <link rel="apple-touch-icon" href="/assets/favicon/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon/favicon.svg">
+    <meta name="theme-color" content="#dc3545">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .history-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .history-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .history-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: #f8f9fa;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: #007bff;
+            color: white;
+        }
+
+        .tab-btn:hover {
+            background: #e9ecef;
+        }
+
+        .tab-btn.active:hover {
+            background: #0056b3;
+        }
+
+        .history-content {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            min-height: 400px;
+            overflow-x: auto;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            min-width: 800px;
+            table-layout: fixed;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .history-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+            position: sticky;
+            left: 0;
+        }
+
+        .history-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* Fixed column widths for better control */
+        .col-date { width: 120px; min-width: 120px; }
+        .col-type { width: 80px; min-width: 80px; }
+        .col-description { width: 180px; min-width: 180px; }
+        .col-amount { width: 100px; min-width: 100px; text-align: right; }
+        .col-balance { width: 110px; min-width: 110px; text-align: right; }
+        .col-status { width: 100px; min-width: 100px; }
+        .col-reference { width: 140px; min-width: 140px; }
+        .col-network { width: 80px; min-width: 80px; }
+        .col-plan { width: 120px; min-width: 120px; }
+        .col-phone { width: 110px; min-width: 110px; }
+        .col-payment { width: 100px; min-width: 100px; }
+
+        /* Text handling */
+        .truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wrap-text {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+            line-height: 1.3;
+        }
+
+        .monospace {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+        }
+
+        .status-success {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .status-processing {
+            color: #ffc107;
+            font-weight: bold;
+        }
+
+        .status-failed {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            color: #6c757d;
+            font-weight: bold;
+        }
+
+        .type-credit {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .type-debit {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #666;
+            padding: 50px 20px;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px 20px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .close-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #555;
+            min-width: 140px;
+        }
+
+        .detail-value {
+            color: #333;
+            text-align: right;
+            flex: 1;
+            word-break: break-word;
+        }
+
+        .detail-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .detail-section h4 {
+            margin: 0 0 15px 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 8px;
+        }
+
+        .json-pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 12px;
+            overflow-x: auto;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Receipt download styles */
+        .receipt-section {
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 10px;
+            border: 2px dashed #007bff;
+        }
+
+        .receipt-section h4 {
+            margin: 0 0 15px 0;
+            color: #007bff;
+            text-align: center;
+        }
+
+        .receipt-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .receipt-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .receipt-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .receipt-btn.secondary {
+            background: linear-gradient(135deg, #6c757d, #5a6268);
+        }
+
+        .receipt-btn.secondary:hover {
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        .receipt-preview {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .history-tabs {
+                flex-direction: column;
+            }
+
+            .history-table {
+                font-size: 13px;
+                min-width: 700px;
+            }
+
+            .history-table th,
+            .history-table td {
+                padding: 8px 10px;
+            }
+
+            /* Adjust column widths for mobile */
+            .col-date { width: 100px; min-width: 100px; }
+            .col-description { width: 150px; min-width: 150px; }
+            .col-reference { width: 120px; min-width: 120px; }
+            .col-plan { width: 100px; min-width: 100px; }
+
+            /* Modal adjustments for mobile */
+            .modal-content {
+                margin: 10px;
+            }
+
+            .detail-row {
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .detail-label {
+                min-width: auto;
+            }
+
+            .detail-value {
+                text-align: left;
+            }
+
+            .receipt-actions {
+                flex-direction: column;
+            }
+            
+            .receipt-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .history-container {
+                padding: 10px;
+            }
+
+            .history-content {
+                padding: 15px;
+                margin: 0 -10px;
+                border-radius: 0;
+            }
+        }
+    </style>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2pdf library for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="/js/url-config.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>KaosSub</h1>
+        <nav style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem;">
+            <a href="/" style="text-decoration: none; color: #333; font-weight: 500;">Home</a>
+            <a href="/dashboard" style="text-decoration: none; color: #333; font-weight: 500;">Dashboard</a>
+            <a href="/data-plans" style="text-decoration: none; color: #333; font-weight: 500;">Data Plans</a>
+            <a href="/history" style="text-decoration: none; color: #333; font-weight: 500;">History</a>
+            <a href="/contact" style="text-decoration: none; color: #333; font-weight: 500;">Contact</a>
+        </nav>
+        </header>
+
+        <main>
+            <div class="history-container">
+                <div class="history-header">
+                    <h2>Transaction History</h2>
+                    <p>View your wallet, payment, and order history</p>
+                </div>
+
+                <div class="history-tabs">
+                    <button class="tab-btn active" onclick="showTab('wallet')">💰 Wallet History</button>
+                    <button class="tab-btn" onclick="showTab('transactions')">💳 Payment History</button>
+                    <button class="tab-btn" onclick="showTab('orders')">📦 Order History</button>
+                </div>
+
+                <div class="history-content">
+                    <div id="wallet-tab" class="tab-content">
+                        <h3>Wallet Transactions</h3>
+                        <div id="wallet-content">
+                            <div class="loading">
+                                <div class="loading-spinner"></div>
+                                Loading wallet history...
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="transactions-tab" class="tab-content" style="display: none;">
+                        <h3>Payment Transactions</h3>
+                        <div id="transactions-content">
+                            <div class="loading">
+                                <div class="loading-spinner"></div>
+                                Loading payment history...
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="orders-tab" class="tab-content" style="display: none;">
+                        <h3>Order History</h3>
+                        <div id="orders-content">
+                            <div class="loading">
+                                <div class="loading-spinner"></div>
+                                Loading order history...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Transaction Details Modal -->
+    <div id="detailsModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <div class="modal-title">Transaction Details</div>
+                <button class="close-btn" onclick="closeDetailsModal()">&times;</button>
+            </div>
+            <div style="padding: 25px;">
+                <div id="modalContent">
+                    <!-- Details will be populated here -->
+                </div>
+                <div style="text-align: center; margin-top: 25px;">
+                    <button onclick="closeDetailsModal()" class="btn btn-secondary">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        let currentTab = 'wallet';
+        let walletData = [];
+        let transactionsData = [];
+        let ordersData = [];
+        let currentTransaction = null;
+        let currentTransactionType = null;
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab and set button active
+            document.getElementById(tabName + '-tab').style.display = 'block';
+            document.querySelector(`.tab-btn[onclick="showTab('${tabName}')"]`).classList.add('active');
+            currentTab = tabName;
+
+            // Load data for the tab if not already loaded
+            loadTabData(tabName);
+        }
+
+        async function loadTabData(tabName) {
+            try {
+                switch(tabName) {
+                    case 'wallet':
+                        if (walletData.length === 0) {
+                            await loadWalletHistory();
+                        } else {
+                            displayWalletHistory();
+                        }
+                        break;
+                    case 'transactions':
+                        if (transactionsData.length === 0) {
+                            await loadTransactionHistory();
+                        } else {
+                            displayTransactionHistory();
+                        }
+                        break;
+                    case 'orders':
+                        if (ordersData.length === 0) {
+                            await loadOrderHistory();
+                        } else {
+                            displayOrderHistory();
+                        }
+                        break;
+                }
+            } catch (error) {
+                console.error('Error loading tab data:', error);
+                document.getElementById(tabName + '-content').innerHTML =
+                    '<div class="empty-state">Error loading data: ' + error.message + '</div>';
+            }
+        }
+
+        // API request with retry mechanism
+        async function apiRequestWithRetry(url, retries = 3) {
+            for (let attempt = 1; attempt <= retries; attempt++) {
+                try {
+                    const response = await Utils.apiRequest(url);
+                    return response;
+                } catch (error) {
+                    if (attempt === retries) throw error;
+                    
+                    // Wait before retry (exponential backoff)
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                }
+            }
+        }
+
+        async function loadWalletHistory() {
+  const contentDiv = document.getElementById('wallet-content');
+  try {
+    contentDiv.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading wallet history...</div>';
+
+    const response = await apiRequestWithRetry('/api/wallet/transactions');
+    
+    console.log('🔍 [DEBUG] Raw API response:', response);
+    
+    if (response.success) {
+      // ✅ FIX: Make sure we're using the correct data property
+      walletData = response.data || response.transactions || [];
+      console.log('✅ [DEBUG] Wallet data assigned:', walletData);
+      
+      displayWalletHistory();
+    } else {
+      throw new Error(response.error || 'Failed to load wallet history');
+    }
+  } catch (error) {
+    console.error('Wallet history error:', error);
+    contentDiv.innerHTML = `
+      <div class="empty-state">
+        <div>⚠️</div>
+        <h3>Network Error</h3>
+        <p>Unable to load wallet history. Please check your connection.</p>
+        <p><small>Error: ${error.message}</small></p>
+        <button onclick="loadWalletHistory()" class="btn" style="margin-top: 10px;">
+          🔄 Retry
+        </button>
+      </div>
+    `;
+  }
+}
+
+        // Replace your displayWalletHistory function with this debug version
+function displayWalletHistory() {
+  const contentDiv = document.getElementById('wallet-content');
+  
+  console.log('🔍 [DEBUG] Wallet data received:', walletData);
+  console.log('🔍 [DEBUG] Wallet data length:', walletData.length);
+  console.log('🔍 [DEBUG] First transaction:', walletData[0]);
+  
+  if (!walletData || walletData.length === 0) {
+    contentDiv.innerHTML = `
+      <div class="empty-state">
+        <div>💼</div>
+        <h3>No Wallet Transactions</h3>
+        <p>You haven't made any wallet transactions yet.</p>
+        <p><small>Debug: walletData is empty</small></p>
+      </div>
+    `;
+    return;
+  }
+
+  // Test if table creation works
+  try {
+    const tableHTML = `
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th class="col-date">Date</th>
+            <th class="col-description">Description</th>
+            <th class="col-type">Type</th>
+            <th class="col-amount">Amount</th>
+            <th class="col-balance">Balance Before</th>
+            <th class="col-balance">Balance After</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${walletData.map(transaction => {
+            console.log('🔍 [DEBUG] Processing transaction:', transaction);
+            return `
+            <tr onclick="openTransactionDetails(${JSON.stringify(transaction).replace(/"/g, '&quot;')}, 'wallet')" 
+                style="cursor: pointer; transition: background 0.2s;" 
+                onmouseover="this.style.background='#f8f9fa'" 
+                onmouseout="this.style.background=''">
+              <td class="col-date wrap-text">${Utils.formatDate(transaction.created_at)}</td>
+              <td class="col-description wrap-text">${transaction.description || 'Wallet Transaction'}</td>
+              <td class="col-type"><span class="type-${transaction.type}">${transaction.type.toUpperCase()}</span></td>
+              <td class="col-amount">${Utils.formatCurrency(transaction.amount)}</td>
+              <td class="col-balance">${Utils.formatCurrency(transaction.balance_before)}</td>
+              <td class="col-balance">${Utils.formatCurrency(transaction.balance_after)}</td>
+            </tr>
+          `}).join('')}
+        </tbody>
+      </table>
+    `;
+    
+    contentDiv.innerHTML = tableHTML;
+    console.log('✅ [DEBUG] Table rendered successfully');
+    
+  } catch (error) {
+    console.error('❌ [DEBUG] Table rendering error:', error);
+    contentDiv.innerHTML = `
+      <div class="empty-state">
+        <div>⚠️</div>
+        <h3>Display Error</h3>
+        <p>Error rendering transactions: ${error.message}</p>
+        <button onclick="displayWalletHistory()" class="btn">Retry</button>
+      </div>
+    `;
+  }
+}
+
+        async function loadTransactionHistory() {
+            const contentDiv = document.getElementById('transactions-content');
+            try {
+                contentDiv.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading payment history...</div>';
+
+                const response = await apiRequestWithRetry('/api/wallet/payment-transactions');
+                if (response.success) {
+                    transactionsData = response.data || [];
+                    displayTransactionHistory();
+                } else {
+                    throw new Error(response.error || 'Failed to load payment history');
+                }
+            } catch (error) {
+                console.error('Payment history error:', error);
+                contentDiv.innerHTML = `
+                    <div class="empty-state">
+                        <div>⚠️</div>
+                        <h3>Network Error</h3>
+                        <p>Unable to load payment history. Please check your connection.</p>
+                        <button onclick="loadTransactionHistory()" class="btn" style="margin-top: 10px;">
+                            🔄 Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function displayTransactionHistory() {
+            const contentDiv = document.getElementById('transactions-content');
+
+            if (transactionsData.length === 0) {
+                contentDiv.innerHTML = `
+                    <div class="empty-state">
+                        <div>💳</div>
+                        <h3>No Payment Transactions</h3>
+                        <p>You haven't made any payment transactions yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            contentDiv.innerHTML = `
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th class="col-date">Date</th>
+                            <th class="col-type">Type</th>
+                            <th class="col-amount">Amount</th>
+                            <th class="col-status">Status</th>
+                            <th class="col-payment">Payment Method</th>
+                            <th class="col-reference">Reference</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${transactionsData.map(transaction => `
+                            <tr onclick="openTransactionDetails(${JSON.stringify(transaction).replace(/"/g, '&quot;')}, 'transaction')" 
+                                style="cursor: pointer; transition: background 0.2s;" 
+                                onmouseover="this.style.background='#f8f9fa'" 
+                                onmouseout="this.style.background=''">
+                                <td class="col-date wrap-text">${Utils.formatDate(transaction.created_at)}</td>
+                                <td class="col-type wrap-text">${transaction.type}</td>
+                                <td class="col-amount">${Utils.formatCurrency(transaction.amount)}</td>
+                                <td class="col-status"><span class="status-${transaction.status}">${transaction.status.toUpperCase()}</span></td>
+                                <td class="col-payment wrap-text">${transaction.payment_method || 'Paystack'}</td>
+                                <td class="col-reference monospace truncate" title="${transaction.payment_reference || 'N/A'}">${transaction.payment_reference || 'N/A'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function loadOrderHistory() {
+            const contentDiv = document.getElementById('orders-content');
+            try {
+                contentDiv.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading order history...</div>';
+
+                const response = await apiRequestWithRetry('/api/orders');
+                if (response.success) {
+                    ordersData = response.data || [];
+                    displayOrderHistory();
+                } else {
+                    throw new Error(response.error || 'Failed to load order history');
+                }
+            } catch (error) {
+                console.error('Order history error:', error);
+                contentDiv.innerHTML = `
+                    <div class="empty-state">
+                        <div>⚠️</div>
+                        <h3>Network Error</h3>
+                        <p>Unable to load order history. Please check your connection.</p>
+                        <button onclick="loadOrderHistory()" class="btn" style="margin-top: 10px;">
+                            🔄 Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function displayOrderHistory() {
+            const contentDiv = document.getElementById('orders-content');
+
+            if (ordersData.length === 0) {
+                contentDiv.innerHTML = `
+                    <div class="empty-state">
+                        <div>📦</div>
+                        <h3>No Orders</h3>
+                        <p>You haven't placed any orders yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            contentDiv.innerHTML = `
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th class="col-date">Date</th>
+                            <th class="col-network">Network</th>
+                            <th class="col-plan">Data Plan</th>
+                            <th class="col-phone">Phone Number</th>
+                            <th class="col-amount">Amount</th>
+                            <th class="col-status">Status</th>
+                            <th class="col-reference">Reference</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${ordersData.map(order => `
+                            <tr onclick="openTransactionDetails(${JSON.stringify(order).replace(/"/g, '&quot;')}, 'order')" 
+                                style="cursor: pointer; transition: background 0.2s;" 
+                                onmouseover="this.style.background='#f8f9fa'" 
+                                onmouseout="this.style.background=''">
+                                <td class="col-date wrap-text">${Utils.formatDate(order.created_at)}</td>
+                                <td class="col-network wrap-text">${order.networks?.name || 'N/A'}</td>
+                                <td class="col-plan wrap-text">${order.data_plans?.name || 'N/A'}</td>
+                                <td class="col-phone wrap-text">${order.phone_number}</td>
+                                <td class="col-amount">${Utils.formatCurrency(order.amount_paid)}</td>
+                                <td class="col-status"><span class="status-${order.status}">${order.status.toUpperCase()}</span></td>
+                                <td class="col-reference monospace truncate" title="${order.isub_reference || 'N/A'}">${order.isub_reference || 'N/A'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Transaction Details Modal Functions
+        function openTransactionDetails(transaction, type) {
+            currentTransaction = transaction;
+            currentTransactionType = type;
+            
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = generateDetailsHTML(transaction, type);
+            
+            document.getElementById('detailsModal').style.display = 'flex';
+            
+            // Update URL without reloading page
+            const transactionId = transaction.id || transaction.reference || 'details';
+            history.pushState(null, '', `?tab=${currentTab}&details=${transactionId}`);
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').style.display = 'none';
+            currentTransaction = null;
+            currentTransactionType = null;
+            
+            // Restore original URL
+            history.pushState(null, '', `?tab=${currentTab}`);
+        }
+
+        function generateDetailsHTML(transaction, type) {
+            const details = generateTransactionDetails(transaction, type);
+            const receiptSection = generateReceiptSection(transaction, type);
+            
+            return details + receiptSection;
+        }
+
+        function generateTransactionDetails(transaction, type) {
+            switch(type) {
+                case 'wallet':
+                    return generateWalletDetailsHTML(transaction);
+                case 'transaction':
+                    return generatePaymentDetailsHTML(transaction);
+                case 'order':
+                    return generateOrderDetailsHTML(transaction);
+                default:
+                    return '<p>No details available.</p>';
+            }
+        }
+
+        function generateReceiptSection(transaction, type) {
+            return `
+                <div class="receipt-section">
+                    <h4>📄 Receipt</h4>
+                    <div class="receipt-actions">
+                        <button onclick="downloadReceipt('pdf')" class="receipt-btn">
+                            <i class="fas fa-file-pdf"></i> Download PDF
+                        </button>
+                        <button onclick="downloadReceipt('print')" class="receipt-btn secondary">
+                            <i class="fas fa-print"></i> Print Receipt
+                        </button>
+                        <button onclick="showReceiptPreview()" class="receipt-btn secondary">
+                            <i class="fas fa-eye"></i> Preview
+                        </button>
+                    </div>
+                    <div id="receiptPreview" class="receipt-preview" style="display: none;">
+                        ${generateReceiptContent(transaction, type)}
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateReceiptContent(transaction, type) {
+            const now = new Date();
+            const receiptId = `KAOS-${transaction.id || transaction.reference || 'RECEIPT'}-${Date.now()}`;
+            
+            let content = '';
+            
+            switch(type) {
+                case 'wallet':
+                    content = `
+                        KAOSUB RECEIPT
+                        Receipt ID: ${receiptId}
+                        Date: ${now.toLocaleString()}
+                        ----------------------------------------
+                        TRANSACTION TYPE: WALLET ${transaction.type.toUpperCase()}
+                        AMOUNT: ${Utils.formatCurrency(transaction.amount)}
+                        DESCRIPTION: ${transaction.description || 'Wallet Transaction'}
+                        BALANCE BEFORE: ${Utils.formatCurrency(transaction.balance_before)}
+                        BALANCE AFTER: ${Utils.formatCurrency(transaction.balance_after)}
+                        TRANSACTION ID: ${transaction.id}
+                        REFERENCE: ${transaction.reference || 'N/A'}
+                        DATE: ${Utils.formatDate(transaction.created_at)}
+                        ----------------------------------------
+                        Thank you for using KaosSub!
+                    `;
+                    break;
+                    
+                case 'transaction':
+                    content = `
+                        KAOSUB RECEIPT
+                        Receipt ID: ${receiptId}
+                        Date: ${now.toLocaleString()}
+                        ----------------------------------------
+                        TRANSACTION TYPE: PAYMENT
+                        AMOUNT: ${Utils.formatCurrency(transaction.amount)}
+                        STATUS: ${transaction.status.toUpperCase()}
+                        PAYMENT METHOD: ${transaction.payment_method || 'Paystack'}
+                        REFERENCE: ${transaction.payment_reference || 'N/A'}
+                        TRANSACTION ID: ${transaction.id}
+                        DATE: ${Utils.formatDate(transaction.created_at)}
+                        ----------------------------------------
+                        Thank you for using KaosSub!
+                    `;
+                    break;
+                    
+                case 'order':
+                    content = `
+                        KAOSUB RECEIPT
+                        Receipt ID: ${receiptId}
+                        Date: ${now.toLocaleString()}
+                        ----------------------------------------
+                        SERVICE: DATA BUNDLE PURCHASE
+                        NETWORK: ${transaction.networks?.name || 'N/A'}
+                        DATA PLAN: ${transaction.data_plans?.name || 'N/A'}
+                        PHONE NUMBER: ${transaction.phone_number}
+                        AMOUNT PAID: ${Utils.formatCurrency(transaction.amount_paid)}
+                        STATUS: ${transaction.status.toUpperCase()}
+                        ORDER ID: ${transaction.id}
+                        REFERENCE: ${transaction.isub_reference || 'N/A'}
+                        DATE: ${Utils.formatDate(transaction.created_at)}
+                        ----------------------------------------
+                        Thank you for using KaosSub!
+                    `;
+                    break;
+            }
+            
+            return content;
+        }
+
+        function downloadReceipt(format) {
+            const transaction = currentTransaction;
+            const type = currentTransactionType;
+            
+            if (!transaction) {
+                Utils.showAlert('No transaction data available', 'error');
+                return;
+            }
+
+            const receiptContent = generateReceiptContent(transaction, type);
+            const receiptId = `KAOS-${transaction.id || transaction.reference || 'RECEIPT'}-${Date.now()}`;
+
+            if (format === 'pdf') {
+                downloadPDFReceipt(receiptContent, receiptId);
+            } else if (format === 'print') {
+                printReceipt(receiptContent);
+            }
+        }
+
+        function downloadPDFReceipt(content, filename) {
+            try {
+                const element = document.createElement('div');
+                element.style.fontFamily = 'Courier New, monospace';
+                element.style.fontSize = '12px';
+                element.style.lineHeight = '1.4';
+                element.style.padding = '20px';
+                element.style.whiteSpace = 'pre-wrap';
+                element.textContent = content;
+
+                const opt = {
+                    margin: 10,
+                    filename: `${filename}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                html2pdf().set(opt).from(element).save();
+                
+                Utils.showAlert('PDF receipt downloaded successfully!', 'success');
+            } catch (error) {
+                console.error('PDF download error:', error);
+                Utils.showAlert('Failed to download PDF receipt', 'error');
+                // Fallback to text download
+                downloadTextReceipt(content, filename);
+            }
+        }
+
+        function downloadTextReceipt(content, filename) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${filename}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            Utils.showAlert('Text receipt downloaded successfully!', 'success');
+        }
+
+        function printReceipt(content) {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>KaosSub Receipt</title>
+                    <style>
+                        body { 
+                            font-family: 'Courier New', monospace; 
+                            font-size: 14px; 
+                            line-height: 1.4;
+                            padding: 20px;
+                            background: white;
+                        }
+                        .receipt { white-space: pre-wrap; }
+                        @media print {
+                            body { margin: 0; padding: 15px; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="receipt">${content}</div>
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                            setTimeout(function() {
+                                window.close();
+                            }, 500);
+                        }
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        function showReceiptPreview() {
+            const preview = document.getElementById('receiptPreview');
+            if (preview.style.display === 'none') {
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        function generateWalletDetailsHTML(transaction) {
+            return `
+                <div class="detail-section">
+                    <h4>💰 Wallet Transaction</h4>
+                    <div class="detail-row">
+                        <span class="detail-label">Transaction ID:</span>
+                        <span class="detail-value monospace">${transaction.id}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Date & Time:</span>
+                        <span class="detail-value">${Utils.formatDate(transaction.created_at)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Type:</span>
+                        <span class="detail-value type-${transaction.type}">${transaction.type.toUpperCase()}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Description:</span>
+                        <span class="detail-value">${transaction.description || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Amount:</span>
+                        <span class="detail-value">${Utils.formatCurrency(transaction.amount)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Balance Before:</span>
+                        <span class="detail-value">${Utils.formatCurrency(transaction.balance_before)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Balance After:</span>
+                        <span class="detail-value">${Utils.formatCurrency(transaction.balance_after)}</span>
+                    </div>
+                    ${transaction.reference ? `
+                    <div class="detail-row">
+                        <span class="detail-label">Reference:</span>
+                        <span class="detail-value monospace">${transaction.reference}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function generatePaymentDetailsHTML(transaction) {
+            return `
+                <div class="detail-section">
+                    <h4>💳 Payment Transaction</h4>
+                    <div class="detail-row">
+                        <span class="detail-label">Transaction ID:</span>
+                        <span class="detail-value monospace">${transaction.id}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Date & Time:</span>
+                        <span class="detail-value">${Utils.formatDate(transaction.created_at)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Type:</span>
+                        <span class="detail-value">${transaction.type}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Amount:</span>
+                        <span class="detail-value">${Utils.formatCurrency(transaction.amount)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value status-${transaction.status}">${transaction.status.toUpperCase()}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Payment Method:</span>
+                        <span class="detail-value">${transaction.payment_method || 'Paystack'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Reference:</span>
+                        <span class="detail-value monospace">${transaction.payment_reference || 'N/A'}</span>
+                    </div>
+                    ${transaction.metadata ? `
+                    <div class="detail-row" style="align-items: flex-start;">
+                        <span class="detail-label">Metadata:</span>
+                        <div class="detail-value">
+                            <pre class="json-pre">${JSON.stringify(transaction.metadata, null, 2)}</pre>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function generateOrderDetailsHTML(order) {
+            return `
+                <div class="detail-section">
+                    <h4>📦 Data Purchase Order</h4>
+                    <div class="detail-row">
+                        <span class="detail-label">Order ID:</span>
+                        <span class="detail-value monospace">${order.id}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Date & Time:</span>
+                        <span class="detail-value">${Utils.formatDate(order.created_at)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Network:</span>
+                        <span class="detail-value">${order.networks?.name || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Data Plan:</span>
+                        <span class="detail-value">${order.data_plans?.name || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Phone Number:</span>
+                        <span class="detail-value">${order.phone_number}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Amount Paid:</span>
+                        <span class="detail-value">${Utils.formatCurrency(order.amount_paid)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value status-${order.status}">${order.status.toUpperCase()}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Reference:</span>
+                        <span class="detail-value monospace">${order.isub_reference || 'N/A'}</span>
+                    </div>
+                    ${order.isub_response ? `
+                    <div class="detail-row" style="align-items: flex-start;">
+                        <span class="detail-label">Provider Response:</span>
+                        <div class="detail-value">
+                            <pre class="json-pre">${JSON.stringify(order.isub_response, null, 2)}</pre>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('detailsModal');
+            if (event.target === modal) {
+                closeDetailsModal();
+            }
+        });
+
+        // Check URL parameters to see which tab to open
+        function checkUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tab = urlParams.get('tab');
+            const details = urlParams.get('details');
+            
+            if (tab && ['wallet', 'transactions', 'orders'].includes(tab)) {
+                showTab(tab);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!Utils.isAuthenticated()) {
+                window.location.href = '/login';
+                return;
+            }
+
+            // Setup logout button
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    Utils.logout();
+                });
+            }
+
+            // Load initial tab data
+            loadTabData(currentTab);
+            checkUrlParams();
+        });
+    </script>
+
+    <!-- Load Footer Component -->
+    <script src="/js/components/footer.js"></script>
+    <!-- Hamburger Menu -->
+    <script src="/js/components/hamburger-menu.js"></script>
+    <!-- Form Handler -->
+    <script src="/js/components/simple-form-handler.js"></script>
+</body>
+</html>

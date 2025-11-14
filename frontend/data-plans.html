@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Plans - KaosSub</title>
+    <!--Favicon-->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon/favicon.ico">
+    <link rel="icon" type="image/png" href="/assets/favicon/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon/favicon.svg">
+    <link rel="apple-touch-icon" href="/assets/favicon/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon/favicon.svg">
+    <meta name="theme-color" content="#dc3545">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .balance-banner {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .balance-amount {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .low-balance {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+
+        .networks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .network-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .network-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .network-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .network-header:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+        }
+
+        .network-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .network-info {
+            flex: 1;
+        }
+
+        .network-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .network-types {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .dropdown-arrow {
+            transition: transform 0.3s;
+            font-size: 0.8rem;
+        }
+
+        .dropdown-arrow.open {
+            transform: rotate(180deg);
+        }
+
+        .data-types-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: #f8f9fa;
+        }
+
+        .data-types-list.open {
+            max-height: 400px;
+        }
+
+        .data-type-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .data-type-item:hover {
+            background: white;
+            transform: translateX(5px);
+        }
+
+        .data-type-item:last-child {
+            border-bottom: none;
+        }
+
+        .data-type-name {
+            font-weight: 600;
+            color: #495057;
+            font-size: 1rem;
+        }
+
+        .data-type-count {
+            background: #007bff;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .close-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .plans-container {
+            padding: 25px;
+        }
+
+        .plans-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .plan-item {
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            transition: all 0.3s;
+            cursor: pointer;
+            background: white;
+        }
+
+        .plan-item:hover {
+            border-color: #007bff;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,123,255,0.15);
+        }
+
+        .plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .plan-name {
+            font-weight: bold;
+            color: #212529;
+            font-size: 1.1rem;
+            line-height: 1.3;
+        }
+
+        .plan-price {
+            font-weight: bold;
+            color: #28a745;
+            font-size: 1.3rem;
+            white-space: nowrap;
+            margin-left: 15px;
+        }
+
+        .plan-details {
+            display: flex;
+            justify-content: space-between;
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .plan-validity {
+            font-weight: 500;
+        }
+
+        .plan-volume {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .purchase-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .purchase-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40,167,69,0.3);
+        }
+
+        .purchase-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .insufficient-balance {
+            opacity: 0.6;
+            position: relative;
+            cursor: not-allowed;
+        }
+
+        .insufficient-balance::after {
+            content: "Insufficient Balance";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .no-plans {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .networks-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                margin: 10px;
+            }
+
+            .plan-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .plan-price {
+                margin-left: 0;
+            }
+        }
+    </style>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/js/url-config.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>KaosSub</h1>
+        <nav style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem;">
+            <a href="/" style="text-decoration: none; color: #333; font-weight: 500;">Home</a>
+            <a href="/dashboard" style="text-decoration: none; color: #333; font-weight: 500;">Dashboard</a>
+            <a href="/data-plans" style="text-decoration: none; color: #333; font-weight: 500;">Data Plans</a>
+            <a href="/history" style="text-decoration: none; color: #333; font-weight: 500;">History</a>
+            <a href="/contact" style="text-decoration: none; color: #333; font-weight: 500;">Contact</a>
+        </nav>
+        </header>
+
+        <main>
+            <div class="page-header">
+                <h2>Data Plans</h2>
+                <p>Purchase data bundles for all Nigerian networks</p>
+            </div>
+
+            <!-- Balance Banner -->
+            <div id="balanceBanner" class="balance-banner">
+                <div>Your Balance</div>
+                <div class="balance-amount" id="currentBalanceDisplay">₦0.00</div>
+                <div><a href="/dashboard" style="color: white; text-decoration: underline; font-weight: 500;">Add Funds</a></div>
+            </div>
+
+            <!-- Updated sync buttons section with admin role checks -->
+            <div style="text-align: center; margin-bottom: 20px;">
+                <!-- Admin-only buttons - hidden by default -->
+                <div id="adminButtons" class="hidden" style="margin-bottom: 15px;">
+                    <button onclick="syncVTUMappings()" class="btn" style="background: #6f42c1; color: white; margin-right: 10px;" id="syncBtn">
+                        🔄 Sync VTU Plans
+                    </button>
+                    <button onclick="syncEnhancedVTU()" class="btn" style="background: #dc3545; color: white; margin-right: 10px;" id="enhancedSyncBtn">
+                        🗑️ Enhanced Sync
+                    </button>
+                    <button onclick="refreshDataPlans()" class="btn" style="background: #28a745; color: white;" id="refreshBtn">
+                        🔃 Refresh Plans
+                    </button>
+
+                    <button onclick="showStatsModal()" class="btn" style="background: #17a2b8; color: white; margin-right: 10px;">
+                        📊 Stats
+                    </button>
+                    <button onclick="showProfitMarginModal()" class="btn" style="background: #ffc107; color: #212529; margin-right: 10px;">
+                        💰 Profit Margin
+                    </button>
+                    <button onclick="showAddPlansModal()" class="btn" style="background: #28a745; color: white; margin-right: 10px;">
+                        ➕ Add Plans
+                    </button>
+                </div>
+                
+                <!-- Regular user refresh button -->
+                <button onclick="refreshDataPlans()" class="btn" style="background: #007bff; color: white;" id="userRefreshBtn">
+                    🔃 Refresh Plans
+                </button>
+                
+                <div id="syncStatus" style="margin-top: 10px; font-size: 0.9rem; min-height: 20px;"></div>
+            </div>
+
+            <!-- Networks Grid -->
+            <div id="networksContainer" class="networks-grid">
+                <!-- Networks will be loaded here -->
+            </div>
+
+            <!-- Loading Message -->
+            <div id="loadingMessage" style="text-align: center; padding: 40px;">
+                <p>Loading data plans...</p>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="alert alert-error" style="display: none;"></div>
+        </main>
+    </div>
+
+    <!-- Stats Modal -->
+    <div id="statsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">📊 Data Plans Statistics</div>
+                <button class="close-btn" onclick="closeStatsModal()">&times;</button>
+            </div>
+            <div style="padding: 25px;">
+                <div id="statsContent">
+                    <!-- Stats will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profit Margin Modal -->
+    <div id="profitMarginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">💰 Adjust Profit Margin</div>
+                <button class="close-btn" onclick="closeProfitMarginModal()">&times;</button>
+            </div>
+            <div style="padding: 25px;">
+                <div class="form-group">
+                    <label>Profit Margin Percentage:</label>
+                    <input type="number" id="profitMargin" class="form-control" min="0" max="100" step="0.1" placeholder="e.g., 10 for 10%">
+                </div>
+                <div class="form-group">
+                    <label>Apply to Network:</label>
+                    <select id="profitNetwork" class="form-control">
+                        <option value="all">All Networks</option>
+                        <!-- Networks will be populated -->
+                    </select>
+                </div>
+                <button onclick="applyProfitMargin()" class="btn" style="background: #ffc107; color: #212529; width: 100%;">Apply Margin</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Plans Modal -->
+    <div id="addPlansModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">➕ Add Data Plans</div>
+                <button class="close-btn" onclick="closeAddPlansModal()">&times;</button>
+            </div>
+            <div style="padding: 25px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button onclick="showSinglePlanForm()" class="btn" style="flex: 1;">Add Single Plan</button>
+                    <button onclick="showBulkPlanForm()" class="btn" style="flex: 1;">Bulk Add Plans</button>
+                </div>
+                
+                <!-- Single Plan Form -->
+                <div id="singlePlanForm" style="display: none;">
+                    <h4>Add Single Plan</h4>
+                    <div class="form-group">
+                        <label>Network:</label>
+                        <select id="planNetwork" class="form-control" required>
+                            <!-- Networks will be populated -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Data Type:</label>
+                        <select id="planDataType" class="form-control" required>
+                            <option value="sme">SME</option>
+                            <option value="corporate">Corporate</option>
+                            <option value="lite">Lite</option>
+                            <option value="special">Special</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Plan Name:</label>
+                        <input type="text" id="planName" class="form-control" placeholder="e.g., 1GB Monthly" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Price (₦):</label>
+                        <input type="number" id="planPrice" class="form-control" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Data Volume:</label>
+                        <input type="text" id="planVolume" class="form-control" placeholder="e.g., 1GB, 500MB">
+                    </div>
+                    <div class="form-group">
+                        <label>Validity:</label>
+                        <input type="text" id="planValidity" class="form-control" placeholder="e.g., 30 days">
+                    </div>
+                    <button onclick="addSinglePlan()" class="btn" style="background: #28a745; color: white; width: 100%;">Add Plan</button>
+                </div>
+
+                <!-- Bulk Plan Form -->
+                <div id="bulkPlanForm" style="display: none;">
+                    <h4>Bulk Add Plans</h4>
+                    <div class="form-group">
+                        <label>Network:</label>
+                        <select id="bulkPlanNetwork" class="form-control" required>
+                            <!-- Networks will be populated -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Data Type:</label>
+                        <select id="bulkPlanDataType" class="form-control" required>
+                            <option value="sme">SME</option>
+                            <option value="corporate">Corporate</option>
+                            <option value="lite">Lite</option>
+                            <option value="special">Special</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Plans (JSON format):</label>
+                        <textarea id="bulkPlansJson" class="form-control" rows="10" placeholder='[
+                            {"name": "1GB Monthly", "price": 1000, "data_volume": "1GB", "validity": "30 days"},
+                            {"name": "500MB Weekly", "price": 500, "data_volume": "500MB", "validity": "7 days"}
+                            ]'>
+                        </textarea>
+                    </div>
+                    <button onclick="addBulkPlans()" class="btn" style="background: #28a745; color: white; width: 100%;">Add Plans in Bulk</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plans Modal -->
+    <div id="plansModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">Select Data Plan</div>
+                <button class="close-btn" onclick="closePlansModal()">&times;</button>
+            </div>
+            <div class="plans-container">
+                <div id="plansList" class="plans-grid">
+                    <!-- Plans will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase Modal -->
+    <div id="purchaseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Purchase Data Bundle</div>
+                <button class="close-btn" onclick="closePurchaseModal()">&times;</button>
+            </div>
+            <div style="padding: 25px;">
+                <div class="form-group">
+                    <label>Network:</label>
+                    <input type="text" id="modalNetwork" class="form-control" readonly style="background: #f8f9fa;">
+                </div>
+                <div class="form-group">
+                    <label>Plan:</label>
+                    <input type="text" id="modalPlan" class="form-control" readonly style="background: #f8f9fa;">
+                </div>
+                <div class="form-group">
+                    <label>Price:</label>
+                    <input type="text" id="modalPrice" class="form-control" readonly style="background: #f8f9fa;">
+                </div>
+                <div class="form-group">
+                    <label for="phoneNumber">Phone Number:</label>
+                    <input type="tel" id="phoneNumber" class="form-control" placeholder="Enter 11-digit phone number" maxlength="11">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                    <button onclick="closePurchaseModal()" class="btn btn-secondary" style="flex: 1; padding: 12px;">Cancel</button>
+                    <button onclick="confirmPurchase()" class="btn" style="flex: 1; padding: 12px;">Purchase Now</button>
+                </div>
+                <div id="purchaseError" class="alert alert-error" style="display: none; margin-top: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        let dataPlans = {};
+        let userBalance = 0;
+        let selectedPlan = null;
+        let currentNetwork = null;
+        let currentDataType = null;
+
+        // Add this function to check admin status
+        async function checkAdminStatusForDataPlans() {
+            try {
+
+                if (!Utils.isAuthenticated()) {
+                    return;
+                }
+
+                const response = await Utils.apiRequest('/api/admin/check-status');
+
+                if (response.success && response.data.is_admin) {
+                    // User is admin - show admin buttons and hide user refresh button
+                    const adminButtons = document.getElementById('adminButtons');
+                    const userRefreshBtn = document.getElementById('userRefreshBtn');
+
+                    if (adminButtons) adminButtons.classList.remove('hidden');
+                    if (userRefreshBtn) userRefreshBtn.classList.add('hidden');
+
+                } else {
+                    // User is not admin - hide admin buttons and show user refresh button
+                    const adminButtons = document.getElementById('adminButtons');
+                    const userRefreshBtn = document.getElementById('userRefreshBtn');
+
+                    if (adminButtons) adminButtons.classList.add('hidden');
+                    if (userRefreshBtn) userRefreshBtn.classList.remove('hidden');
+
+                }
+            } catch (error) {
+                console.error('❌ Failed to check admin status:', error);
+                // On error, assume user is not admin
+                const adminButtons = document.getElementById('adminButtons');
+                const userRefreshBtn = document.getElementById('userRefreshBtn');
+
+                if (adminButtons) adminButtons.classList.add('hidden');
+                if (userRefreshBtn) userRefreshBtn.classList.remove('hidden');
+            }
+        }
+
+        // Load data plans
+        async function loadDataPlans() {
+            try {
+                const response = await Utils.apiRequest('/api/data/plans');
+                if (response.success) {
+                    dataPlans = response.data;
+                    displayNetworks();
+                    document.getElementById('loadingMessage').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading data plans:', error);
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('errorMessage').textContent = 'Failed to load data plans. Please try again.';
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        }
+
+        // Display networks with dropdown data types
+        function displayNetworks() {
+            const container = document.getElementById('networksContainer');
+            container.innerHTML = '';
+
+            Object.values(dataPlans).forEach(networkData => {
+                const networkCard = createNetworkCard(networkData);
+                container.appendChild(networkCard);
+            });
+        }
+
+        // Create network card with dropdown data types
+        function createNetworkCard(networkData) {
+            const card = document.createElement('div');
+            card.className = 'network-card';
+
+            // Count total data types
+            const dataTypeCount = Object.keys(networkData.data_types || {}).length;
+
+            card.innerHTML = `
+                <div class="network-header" onclick="toggleNetworkDropdown(this)">
+                    <div class="network-logo">${networkData.network.name.charAt(0)}</div>
+                    <div class="network-info">
+                        <div class="network-name">${networkData.network.name}</div>
+                        <div class="network-types">${dataTypeCount} data type${dataTypeCount !== 1 ? 's' : ''} available</div>
+                    </div>
+                    <div class="dropdown-arrow">▼</div>
+                </div>
+                <div class="data-types-list">
+                    ${Object.values(networkData.data_types || {}).map(dataType => `
+                        <div class="data-type-item" onclick="openPlansModal('${networkData.network.name}', '${dataType.type.name}')">
+                            <span class="data-type-name">${dataType.type.name}</span>
+                            <span class="data-type-count">${dataType.plans.length}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Toggle network dropdown
+        function toggleNetworkDropdown(header) {
+            const card = header.parentElement;
+            const dataTypesList = card.querySelector('.data-types-list');
+            const arrow = header.querySelector('.dropdown-arrow');
+
+            dataTypesList.classList.toggle('open');
+            arrow.classList.toggle('open');
+        }
+
+        // Open plans modal for specific data type
+        function openPlansModal(networkName, dataTypeName) {
+            currentNetwork = networkName;
+            currentDataType = dataTypeName;
+
+            const modalTitle = document.getElementById('modalTitle');
+            const plansList = document.getElementById('plansList');
+
+            modalTitle.textContent = `${networkName} - ${dataTypeName} Plans`;
+
+            // Find the plans for this network and data type
+            let plans = [];
+            Object.values(dataPlans).forEach(networkData => {
+                if (networkData.network.name === networkName) {
+                    Object.values(networkData.data_types || {}).forEach(dataType => {
+                        if (dataType.type.name === dataTypeName) {
+                            plans = dataType.plans;
+                        }
+                    });
+                }
+            });
+
+            // Display plans with VTU mapping status
+            if (plans.length > 0) {
+                plansList.innerHTML = plans.map(plan => {
+                    const hasSufficientBalance = userBalance >= plan.price;
+                    const hasVTUMapping = plan.vtu_variation_id;
+                    const planClass = hasSufficientBalance ? '' : 'insufficient-balance';
+                    const vtuStatus = hasVTUMapping ? '✅ VTU Mapped' : '❌ No VTU Mapping';
+
+                    const onClick = hasSufficientBalance && hasVTUMapping ?
+                        `openPurchaseModal('${plan.id}', '${networkName.replace(/'/g, "\\'")}', '${plan.name.replace(/'/g, "\\'")}', ${plan.price})` : '';
+
+                    return `
+                        <div class="plan-item ${planClass}" onclick="${onClick}">
+                            <div class="plan-header">
+                                <div class="plan-name">${plan.name}</div>
+                                <div class="plan-price">${Utils.formatCurrency(plan.price)}</div>
+                            </div>
+                            <div class="plan-details">
+                                <span class="plan-validity">${plan.validity || '30 days'}</span>
+                                <span class="plan-volume">${plan.data_volume || ''}</span>
+                            </div>
+                            <div class="plan-meta" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.8rem;">
+                                <span style="color: ${hasVTUMapping ? '#28a745' : '#dc3545'}; font-weight: 500;">
+                                    ${vtuStatus}
+                                </span>
+                                ${plan.vtu_variation_id ?
+                                    `<span style="color: #6c757d; font-size: 0.7rem;">ID: ${plan.vtu_variation_id}</span>` :
+                                    ''
+                                }
+                            </div>
+                            ${hasSufficientBalance && hasVTUMapping ?
+                                '<button class="purchase-btn" onclick="event.stopPropagation(); openPurchaseModal(\'' + plan.id + '\', \'' + networkName.replace(/'/g, "\\'") + '\', \'' + plan.name.replace(/'/g, "\\'") + '\', ' + plan.price + ')">Purchase</button>' :
+                                '<button class="purchase-btn" disabled>' +
+                                    (hasVTUMapping ? 'Insufficient Balance' : 'Not Available') +
+                                '</button>'
+                            }
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                plansList.innerHTML = '<div class="no-plans">No plans available for this data type.</div>';
+            }
+
+            document.getElementById('plansModal').style.display = 'flex';
+        }
+
+        // Close plans modal
+        function closePlansModal() {
+            document.getElementById('plansModal').style.display = 'none';
+            currentNetwork = null;
+            currentDataType = null;
+        }
+
+        // Open purchase modal
+        function openPurchaseModal(planId, networkName, planName, price) {
+            selectedPlan = {
+                id: planId,
+                network: networkName,
+                name: planName,
+                price: price
+            };
+
+            document.getElementById('modalNetwork').value = networkName;
+            document.getElementById('modalPlan').value = planName;
+            document.getElementById('modalPrice').value = Utils.formatCurrency(price);
+            document.getElementById('phoneNumber').value = '';
+            document.getElementById('purchaseError').style.display = 'none';
+
+            // Close plans modal and open purchase modal
+            closePlansModal();
+            document.getElementById('purchaseModal').style.display = 'flex';
+        }
+
+        // Close purchase modal
+        function closePurchaseModal() {
+            document.getElementById('purchaseModal').style.display = 'none';
+            selectedPlan = null;
+        }
+
+        // Confirm purchase - UPDATED WITH FIXED EMAIL SENDING
+        async function confirmPurchase() {
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const errorDiv = document.getElementById('purchaseError');
+
+            try {
+                errorDiv.style.display = 'none';
+
+                if (!phoneNumber || !Utils.validatePhone(phoneNumber)) {
+                    throw new Error('Please enter a valid 11-digit phone number');
+                }
+
+                const button = document.querySelector('#purchaseModal .btn:last-child');
+                const originalText = Utils.showLoading(button);
+
+                const networkId = getNetworkId(selectedPlan.network);
+                if (!networkId) {
+                    throw new Error('Invalid network selected');
+                }
+
+                const response = await Utils.apiRequest('/api/data/purchase', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        network_id: networkId,
+                        data_plan_id: selectedPlan.id,
+                        phone_number: phoneNumber
+                    })
+                });
+
+                if (response.success) {
+                    Utils.showAlert('Data purchase successful!', 'success');
+                    
+                    // ✅ CAPTURE ALL DATA FOR EMAIL BEFORE ANY CLEARING
+                    const emailData = {
+                        planName: selectedPlan.name,
+                        planPrice: selectedPlan.price,
+                        phoneNumber: phoneNumber,
+                        reference: response.data.reference || 'DATA-' + Date.now(),
+                        userEmail: '',
+                        userName: ''
+                    };
+
+                    // Get user data immediately
+                    try {
+                        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                        const authData = JSON.parse(localStorage.getItem('supabase.auth.token') || '{}');
+                        
+                        emailData.userEmail = userProfile.email || authData.currentSession?.user?.email;
+                        emailData.userName = userProfile.full_name || 'Customer';
+                    } catch (error) {
+                        console.log('Error getting user data for email:', error);
+                    }
+
+                    closePurchaseModal();
+                    await window.kaosApp.loadUserData();
+                    userBalance = window.kaosApp.userBalance;
+                    updateBalanceDisplay();
+                    loadDataPlans();
+                    
+                    // ✅ SEND ORDER CONFIRMATION EMAIL (FINAL FIXED VERSION)
+                    // Only send email if we have user email
+                    if (emailData.userEmail) {
+                        setTimeout(async () => {
+                            try {
+                                console.log('🔄 Starting order confirmation email...');
+                                console.log('📧 To:', emailData.userEmail);
+                                console.log('📦 Order:', emailData.planName);
+
+                                const orderDetails = {
+                                    reference: emailData.reference,
+                                    plan: emailData.planName,
+                                    phone: emailData.phoneNumber,
+                                    amount: emailData.planPrice,
+                                    status: 'success'
+                                };
+
+                                const emailResponse = await Utils.apiRequest('/api/email/send-order-confirmation', 'POST', {
+                                    email: emailData.userEmail,
+                                    orderDetails: orderDetails,
+                                    userName: emailData.userName
+                                });
+
+                                console.log('✅ Email API response:', emailResponse);
+                                
+                                if (emailResponse.success) {
+                                    Utils.showAlert('📧 Order confirmation sent to your email!', 'success');
+                                } else {
+                                    console.log('❌ Email sending failed:', emailResponse.error);
+                                }
+                            } catch (emailError) {
+                                console.log('❌ Email sending error (non-critical):', emailError.message);
+                            }
+                        }, 1000);
+                    } else {
+                        console.log('❌ No user email available, skipping order confirmation email');
+                    }
+                    
+                } else {
+                    throw new Error(response.error || 'Purchase failed');
+                }
+
+                Utils.hideLoading(button, originalText);
+
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+                console.error('Purchase error:', error);
+                
+                // Make sure to hide loading even on error
+                const button = document.querySelector('#purchaseModal .btn:last-child');
+                if (button) {
+                    Utils.hideLoading(button, 'Purchase Now');
+                }
+            }
+        }
+
+        // Helper function to get network ID
+        function getNetworkId(networkName) {
+            for (const [networkId, networkData] of Object.entries(dataPlans)) {
+                if (networkData.network.name === networkName) {
+                    return networkId;
+                }
+            }
+            return null;
+        }
+
+        // Update balance display
+        function updateBalanceDisplay() {
+            const banner = document.getElementById('balanceBanner');
+            const balanceAmount = document.getElementById('currentBalanceDisplay');
+
+            balanceAmount.textContent = Utils.formatCurrency(userBalance);
+
+            if (userBalance < 100) {
+                banner.classList.add('low-balance');
+            } else {
+                banner.classList.remove('low-balance');
+            }
+        }
+
+        // Add this function to refresh data plans
+        async function refreshDataPlans() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            const userRefreshBtn = document.getElementById('userRefreshBtn');
+            
+            try {
+                const originalText = Utils.showLoading(refreshBtn, '🔄 Refreshing...');
+                const userOriginalText = Utils.showLoading(userRefreshBtn, '🔄 Refreshing...');
+                document.getElementById('loadingMessage').style.display = 'block';
+
+                await loadDataPlans();
+
+                Utils.hideLoading(refreshBtn, originalText);
+                Utils.hideLoading(userRefreshBtn, userOriginalText);
+                Utils.showAlert('Plans refreshed successfully!', 'success');
+            } catch (error) {
+                Utils.hideLoading(refreshBtn, '🔃 Refresh Plans');
+                Utils.hideLoading(userRefreshBtn, '🔃 Refresh Plans');
+                Utils.showAlert('Failed to refresh plans', 'error');
+            }
+        }
+
+        // Add admin check to sync functions
+        async function syncVTUMappings() {
+            // Double-check admin status before proceeding
+            try {
+                const response = await Utils.apiRequest('/api/admin/check-status');
+                if (!response.success || !response.data.is_admin) {
+                    Utils.showAlert('Access denied. Admin privileges required.', 'error');
+                    return;
+                }
+            } catch (error) {
+                Utils.showAlert('Access denied. Admin privileges required.', 'error');
+                return;
+            }
+
+            const syncBtn = document.getElementById('syncBtn');
+            const syncStatus = document.getElementById('syncStatus');
+
+            try {
+                const originalText = Utils.showLoading(syncBtn, '🔄 Syncing...');
+                syncStatus.textContent = 'Syncing VTU variation IDs...';
+                syncStatus.style.color = '#007bff';
+
+                const response = await Utils.apiRequest('/api/data/sync-vtu-variations', {
+                    method: 'POST'
+                });
+
+                if (response.success) {
+                    syncStatus.innerHTML = `
+                        <div style="color: #28a745;">
+                            ✅ ${response.message}
+                        </div>
+                        <div style="font-size: 0.8rem; margin-top: 5px;">
+                            Mapped ${response.data.totalMapped} plans successfully
+                        </div>
+                    `;
+
+                    // Auto-refresh the plans after sync
+                    await refreshDataPlans();
+                }
+
+                Utils.hideLoading(syncBtn, originalText);
+
+            } catch (error) {
+                syncStatus.innerHTML = `
+                    <div style="color: #dc3545;">
+                        ❌ Sync failed: ${error.message}
+                    </div>
+                    <div style="font-size: 0.8rem; margin-top: 5px;">
+                        Check console for details
+                    </div>
+                `;
+                Utils.hideLoading(syncBtn, '🔄 Sync VTU Plans');
+                console.error('Sync error:', error);
+            }
+        }
+
+        async function syncEnhancedVTU() {
+            // Double-check admin status before proceeding
+            try {
+                const response = await Utils.apiRequest('/api/admin/check-status');
+                if (!response.success || !response.data.is_admin) {
+                    Utils.showAlert('Access denied. Admin privileges required.', 'error');
+                    return;
+                }
+            } catch (error) {
+                Utils.showAlert('Access denied. Admin privileges required.', 'error');
+                return;
+            }
+
+            const enhancedSyncBtn = document.getElementById('enhancedSyncBtn');
+            const syncStatus = document.getElementById('syncStatus');
+
+            if (!confirm('⚠️ This will DELETE unmapped plans and ADD new VTU plans. Continue?')) {
+                return;
+            }
+
+            try {
+                const originalText = Utils.showLoading(enhancedSyncBtn, '🗑️ Enhanced Sync...');
+                syncStatus.textContent = 'Enhanced sync: Deleting unmapped + Adding missing plans...';
+                syncStatus.style.color = '#dc3545';
+
+                const response = await Utils.apiRequest('/api/data/sync-vtu-enhanced', {
+                    method: 'POST'
+                });
+
+                if (response.success) {
+                    syncStatus.innerHTML = `
+                        <div style="color: #28a745;">
+                            ✅ ${response.message}
+                        </div>
+                        <div style="font-size: 0.8rem; margin-top: 5px;">
+                            📊 Mapped: ${response.data.totalMapped} |
+                            🗑️ Deleted: ${response.data.totalDeleted} |
+                            ➕ Added: ${response.data.totalAdded} |
+                            📈 Net: ${response.data.netChange}
+                        </div>
+                    `;
+
+                    // Auto-refresh the plans after sync
+                    await refreshDataPlans();
+                }
+
+                Utils.hideLoading(enhancedSyncBtn, originalText);
+
+            } catch (error) {
+                syncStatus.innerHTML = `
+                    <div style="color: #dc3545;">
+                        ❌ Enhanced sync failed: ${error.message}
+                    </div>
+                `;
+                Utils.hideLoading(enhancedSyncBtn, '🗑️ Enhanced Sync');
+                console.error('Enhanced sync error:', error);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            if (Utils.requireAuth()) {
+                userBalance = parseFloat(localStorage.getItem('userBalance') || '0');
+                updateBalanceDisplay();
+                loadDataPlans();
+                
+                // ✅ ADD THIS: Check admin status when page loads
+                checkAdminStatusForDataPlans();
+            }
+        });
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(event) {
+            const plansModal = document.getElementById('plansModal');
+            const purchaseModal = document.getElementById('purchaseModal');
+
+            if (event.target === plansModal) {
+                closePlansModal();
+            }
+            if (event.target === purchaseModal) {
+                closePurchaseModal();
+            }
+        });
+
+        // Modal management functions
+        function showStatsModal() {
+            loadDataPlansStats();
+            document.getElementById('statsModal').style.display = 'flex';
+        }
+
+        function closeStatsModal() {
+            document.getElementById('statsModal').style.display = 'none';
+        }
+
+        function showProfitMarginModal() {
+            loadNetworksForModal('profitNetwork');
+            document.getElementById('profitMarginModal').style.display = 'flex';
+        }
+
+        function closeProfitMarginModal() {
+            document.getElementById('profitMarginModal').style.display = 'none';
+        }
+
+        function showAddPlansModal() {
+            loadNetworksForModal('planNetwork');
+            loadNetworksForModal('bulkPlanNetwork');
+            document.getElementById('addPlansModal').style.display = 'flex';
+        }
+
+        function closeAddPlansModal() {
+            document.getElementById('addPlansModal').style.display = 'none';
+        }
+
+        function showSinglePlanForm() {
+            document.getElementById('singlePlanForm').style.display = 'block';
+            document.getElementById('bulkPlanForm').style.display = 'none';
+        }
+
+        function showBulkPlanForm() {
+            document.getElementById('singlePlanForm').style.display = 'none';
+            document.getElementById('bulkPlanForm').style.display = 'block';
+        }
+
+        // Load networks for modal dropdowns
+        function loadNetworksForModal(selectId) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            
+            // Clear existing options
+            select.innerHTML = '<option value="all">All Networks</option>';
+            
+            // Add networks from loaded data
+            Object.values(dataPlans).forEach(networkData => {
+                const option = document.createElement('option');
+                option.value = networkData.network.id;
+                option.textContent = networkData.network.name;
+                select.appendChild(option);
+            });
+        }
+
+        // Load data plans statistics
+        async function loadDataPlansStats() {
+            try {
+                const response = await Utils.apiRequest('/api/admin/data-plans/stats');
+                
+                if (response.success) {
+                    displayDataPlansStats(response.data);
+                } else {
+                    throw new Error(response.error);
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+                document.getElementById('statsContent').innerHTML = 
+                    '<div class="alert alert-error">Failed to load statistics: ' + error.message + '</div>';
+            }
+        }
+
+        function displayDataPlansStats(stats) {
+            const statsContent = document.getElementById('statsContent');
+            
+            statsContent.innerHTML = `
+                <div class="stats-grid" style="margin-bottom: 20px;">
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.total_plans}</div>
+                        <div class="stat-label">Total Plans</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.mapped_plans}</div>
+                        <div class="stat-label">VTU Mapped</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.unmapped_plans}</div>
+                        <div class="stat-label">Unmapped</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.active_plans}</div>
+                        <div class="stat-label">Active Plans</div>
+                    </div>
+                </div>
+                
+                <h4>Network Breakdown</h4>
+                <div style="max-height: 300px; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 10px; border-bottom: 1px solid #ddd;">Network</th>
+                                <th style="padding: 10px; border-bottom: 1px solid #ddd;">Total</th>
+                                <th style="padding: 10px; border-bottom: 1px solid #ddd;">Mapped</th>
+                                <th style="padding: 10px; border-bottom: 1px solid #ddd;">Unmapped</th>
+                                <th style="padding: 10px; border-bottom: 1px solid #ddd;">Mapping %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${stats.network_breakdown.map(network => `
+                                <tr>
+                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${network.network_name}</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${network.total_plans}</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${network.mapped_plans}</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${network.unmapped_plans}</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${network.mapping_percentage}%</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <h5>Price Range</h5>
+                    <p>Lowest: ${Utils.formatCurrency(stats.price_range.lowest)}</p>
+                    <p>Highest: ${Utils.formatCurrency(stats.price_range.highest)}</p>
+                    <p>Average: ${Utils.formatCurrency(stats.price_range.average)}</p>
+                </div>
+            `;
+        }
+
+        // Apply profit margin
+        async function applyProfitMargin() {
+            const margin = parseFloat(document.getElementById('profitMargin').value);
+            const networkId = document.getElementById('profitNetwork').value;
+            
+            if (!margin || margin < 0) {
+                Utils.showAlert('Please enter a valid profit margin percentage', 'error');
+                return;
+            }
+            
+            try {
+                const response = await Utils.apiRequest('/api/admin/data-plans/profit-margin', 'POST', {
+                    margin_percentage: margin,
+                    network_id: networkId === 'all' ? null : networkId
+                });
+                
+                if (response.success) {
+                    Utils.showAlert(`Profit margin applied successfully! ${response.data.updated_plans} plans updated.`, 'success');
+                    closeProfitMarginModal();
+                    // Refresh the data plans
+                    refreshDataPlans();
+                } else {
+                    throw new Error(response.error);
+                }
+            } catch (error) {
+                Utils.showAlert('Failed to apply profit margin: ' + error.message, 'error');
+            }
+        }
+
+        // Add single plan
+        async function addSinglePlan() {
+            const networkId = document.getElementById('planNetwork').value;
+            const dataType = document.getElementById('planDataType').value;
+            const name = document.getElementById('planName').value;
+            const price = parseFloat(document.getElementById('planPrice').value);
+            const dataVolume = document.getElementById('planVolume').value;
+            const validity = document.getElementById('planValidity').value;
+            
+            if (!networkId || !name || !price) {
+                Utils.showAlert('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            try {
+                const response = await Utils.apiRequest('/api/admin/data-plans/single', 'POST', {
+                    network_id: networkId,
+                    data_type: dataType,
+                    name: name,
+                    price: price,
+                    data_volume: dataVolume,
+                    validity: validity
+                });
+                
+                if (response.success) {
+                    Utils.showAlert('Plan added successfully!', 'success');
+                    // Reset form
+                    document.getElementById('planName').value = '';
+                    document.getElementById('planPrice').value = '';
+                    document.getElementById('planVolume').value = '';
+                    document.getElementById('planValidity').value = '';
+                    closeAddPlansModal();
+                    // Refresh data plans
+                    refreshDataPlans();
+                } else {
+                    throw new Error(response.error);
+                }
+            } catch (error) {
+                Utils.showAlert('Failed to add plan: ' + error.message, 'error');
+            }
+        }
+
+        // Add bulk plans
+        async function addBulkPlans() {
+            const networkId = document.getElementById('bulkPlanNetwork').value;
+            const dataType = document.getElementById('bulkPlanDataType').value;
+            const plansJson = document.getElementById('bulkPlansJson').value;
+            
+            if (!networkId || !plansJson) {
+                Utils.showAlert('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            let plans;
+            try {
+                plans = JSON.parse(plansJson);
+            } catch (error) {
+                Utils.showAlert('Invalid JSON format. Please check your input.', 'error');
+                return;
+            }
+            
+            if (!Array.isArray(plans)) {
+                Utils.showAlert('Plans must be provided as a JSON array', 'error');
+                return;
+            }
+            
+            try {
+                const response = await Utils.apiRequest('/api/admin/data-plans/bulk', 'POST', {
+                    network_id: networkId,
+                    data_type: dataType,
+                    plans: plans
+                });
+                
+                if (response.success) {
+                    Utils.showAlert(`Successfully added ${response.data.added_plans} plans!`, 'success');
+                    // Reset form
+                    document.getElementById('bulkPlansJson').value = '';
+                    closeAddPlansModal();
+                    // Refresh data plans
+                    refreshDataPlans();
+                } else {
+                    throw new Error(response.error);
+                }
+            } catch (error) {
+                Utils.showAlert('Failed to add bulk plans: ' + error.message, 'error');
+            }
+        }
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(event) {
+            const modals = ['statsModal', 'profitMarginModal', 'addPlansModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (event.target === modal) {
+                    switch(modalId) {
+                        case 'statsModal': closeStatsModal(); break;
+                        case 'profitMarginModal': closeProfitMarginModal(); break;
+                        case 'addPlansModal': closeAddPlansModal(); break;
+                    }
+                }
+            });
+        });
+    </script>
+
+    
+    <!-- Load Footer Component -->
+    <script src="/js/components/footer.js"></script>
+    <!-- Hamburger Menu -->
+    <script src="/js/components/hamburger-menu.js"></script>
+    <!-- Form Handler -->
+    <script src="/js/components/simple-form-handler.js"></script>
+</body>
+</html>
