@@ -176,6 +176,40 @@
             max-height: 200px;
             overflow-y: auto;
         }
+/* Add to your admin styles */
+.settings-category {
+    background: #f8f9fa;
+    border-left: 4px solid #007bff;
+}
+
+.settings-category h4 {
+    color: #495057;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
     </style>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -983,94 +1017,247 @@
             }
         }
 
-        // System Settings Functions (Under Construction)
-        async function loadSystemSettings() {
-            try {
-                debugLog('⚙️ Loading system settings...');
-                hideAllSections();
-                document.getElementById('systemSettingsSection').classList.remove('hidden');
-                
-                const response = await Utils.apiRequest('/api/admin/settings');
-                debugLog('System settings response:', response);
-                
-                if (response.success) {
-                    displaySystemSettings(response.data);
-                } else {
-                    throw new Error('Failed to load system settings');
-                }
-            } catch (error) {
-                debugLog('❌ Failed to load system settings:', error);
-                showMessage('Failed to load system settings: ' + error.message, 'error');
-            }
-        }
+        // Enhanced loadSystemSettings function
+async function loadSystemSettings() {
+    try {
+        debugLog('⚙️ Loading system settings...');
+        hideAllSections();
+        document.getElementById('systemSettingsSection').classList.remove('hidden');
 
-        function displaySystemSettings(data) {
-            debugLog('⚙️ Displaying system settings:', data);
-            const container = document.getElementById('systemSettingsSection');
-            const settings = data.settings || {};
+        // Show loading state
+        document.getElementById('systemSettingsContent').innerHTML = '<p>Loading system settings...</p>';
+
+        const response = await Utils.apiRequest('/api/admin/settings');
+        debugLog('System settings response:', response);
+
+        if (response.success) {
+            displaySystemSettings(response.data);
+        } else {
+            throw new Error('Failed to load system settings');
+        }
+    } catch (error) {
+        debugLog('❌ Failed to load system settings:', error);
+        document.getElementById('systemSettingsContent').innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #dc3545;">
+                <h3>❌ Error Loading Settings</h3>
+                <p>${error.message}</p>
+                <button class="btn" onclick="loadSystemSettings()" style="margin-top: 15px;">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// Enhanced displaySystemSettings function
+function displaySystemSettings(data) {
+    debugLog('⚙️ Displaying system settings:', data);
+    const container = document.getElementById('systemSettingsContent');
+    const settings = data.settings || {};
+    const categories = data.settings_by_category || {};
+
+    let settingsHTML = `
+        <div style="max-width: 800px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>System Configuration</h3>
+                <div>
+                    <button class="btn btn-secondary" onclick="loadSystemSettings()" style="margin-right: 10px;">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn btn-warning" onclick="resetSystemSettings()">
+                        <i class="fas fa-undo"></i> Reset to Defaults
+                    </button>
+                </div>
+            </div>
             
-            const settingsHTML = `
-                <div style="max-width: 600px;">
-                    <h3>System Configuration</h3>
-                    <div class="form-group">
-                        <label>Site Name:</label>
-                        <input type="text" id="appName" class="form-control" value="${settings.site_name || 'KaosSub'}" placeholder="Site Name">
-                    </div>
-                    <div class="form-group">
-                        <label>Currency:</label>
-                        <input type="text" id="currency" class="form-control" value="${settings.currency || 'NGN'}" placeholder="Currency">
-                    </div>
-                    <div class="form-group">
-                        <label>Max Orders Per User:</label>
-                        <input type="number" id="maxOrders" class="form-control" value="${settings.max_orders_per_user || '10'}" placeholder="10" min="1" max="100">
-                    </div>
-                    <div class="form-group">
-                        <label>Maintenance Mode:</label>
-                        <select id="maintenanceMode" class="form-control">
-                            <option value="false" ${!settings.maintenance_mode ? 'selected' : ''}>Disabled</option>
-                            <option value="true" ${settings.maintenance_mode ? 'selected' : ''}>Enabled</option>
+            <div style="margin-bottom: 20px;">
+                <p><strong>Last Updated:</strong> ${new Date(data.updated_at).toLocaleString()}</p>
+            </div>
+    `;
+
+    // Display settings by category
+    for (const [category, categorySettings] of Object.entries(categories)) {
+        settingsHTML += `
+            <div class="settings-category" style="margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h4 style="margin-bottom: 15px; color: #495057; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                    ${category.charAt(0).toUpperCase() + category.slice(1)} Settings
+                </h4>
+                <div class="settings-grid" style="display: grid; gap: 15px;">
+        `;
+
+        categorySettings.forEach(setting => {
+            const inputId = `setting_${setting.setting_key}`;
+            let inputField = '';
+
+            switch (setting.setting_type) {
+                case 'boolean':
+                    inputField = `
+                        <select id="${inputId}" class="form-control">
+                            <option value="true" ${setting.parsed_value ? 'selected' : ''}>Enabled</option>
+                            <option value="false" ${!setting.parsed_value ? 'selected' : ''}>Disabled</option>
                         </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Registration Enabled:</label>
-                        <select id="registrationEnabled" class="form-control">
-                            <option value="true" ${settings.registration_enabled !== false ? 'selected' : ''}>Enabled</option>
-                            <option value="false" ${settings.registration_enabled === false ? 'selected' : ''}>Disabled</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-success" onclick="saveSystemSettings()">Save Settings</button>
+                    `;
+                    break;
+                case 'number':
+                    inputField = `<input type="number" id="${inputId}" class="form-control" value="${setting.parsed_value}">`;
+                    break;
+                case 'json':
+                    inputField = `<textarea id="${inputId}" class="form-control" rows="3">${JSON.stringify(setting.parsed_value, null, 2)}</textarea>`;
+                    break;
+                default:
+                    inputField = `<input type="text" id="${inputId}" class="form-control" value="${setting.parsed_value || ''}">`;
+            }
+
+            settingsHTML += `
+                <div class="form-group">
+                    <label for="${inputId}" style="font-weight: 500;">${setting.setting_key.replace(/_/g, ' ').toUpperCase()}:</label>
+                    ${inputField}
+                    ${setting.description ? `<small style="color: #666; display: block; margin-top: 5px;">${setting.description}</small>` : ''}
                 </div>
             `;
+        });
+
+        settingsHTML += `
+                </div>
+            </div>
+        `;
+    }
+
+    settingsHTML += `
+            <div style="margin-top: 20px;">
+                <button class="btn btn-success" onclick="saveSystemSettings()" style="margin-right: 10px;">
+                    <i class="fas fa-save"></i> Save All Settings
+                </button>
+                <button class="btn btn-info" onclick="testSettings()">
+                    <i class="fas fa-vial"></i> Test Settings
+                </button>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = settingsHTML;
+}
+
+// Enhanced saveSystemSettings function
+async function saveSystemSettings() {
+    try {
+        debugLog('💾 Saving system settings...');
+        
+        // Collect all settings from the form
+        const settings = {};
+        const inputs = document.querySelectorAll('#systemSettingsContent [id^="setting_"]');
+        
+        inputs.forEach(input => {
+            const key = input.id.replace('setting_', '');
+            let value = input.value;
             
-            container.innerHTML = settingsHTML;
-        }
-
-        async function saveSystemSettings() {
-            try {
-                const settings = {
-                    app_name: document.getElementById('appName').value,
-                    support_email: document.getElementById('supportEmail')?.value || 'support@kaossub.com',
-                    commission_rate: document.getElementById('commissionRate')?.value || '10',
-                    maintenance_mode: document.getElementById('maintenanceMode').value === 'true'
-                };
-
-                debugLog('💾 Saving system settings:', settings);
-                const response = await Utils.apiRequest('/api/admin/settings', {
-                    method: 'PUT',
-                    body: JSON.stringify({ settings })
-                });
-
-                if (response.success) {
-                    showMessage('System settings saved successfully', 'success');
-                } else {
-                    throw new Error(response.error);
+            // Convert values based on input type
+            if (input.type === 'number') {
+                value = parseFloat(value);
+            } else if (input.tagName === 'SELECT') {
+                value = value === 'true';
+            } else if (input.tagName === 'TEXTAREA') {
+                try {
+                    value = JSON.parse(value);
+                } catch (e) {
+                    // Keep as string if not valid JSON
                 }
-            } catch (error) {
-                showMessage('Failed to save settings: ' + error.message, 'error');
-                debugLog('❌ Save system settings failed:', error);
             }
-        }
+            
+            settings[key] = value;
+        });
 
+        debugLog('📝 Settings to save:', settings);
+
+        const response = await Utils.apiRequest('/api/admin/settings', {
+            method: 'PUT',
+            body: JSON.stringify({ settings })
+        });
+
+        if (response.success) {
+            showMessage('System settings saved successfully!', 'success');
+            debugLog('✅ Settings saved:', response.data);
+            // Reload settings to show updated values
+            loadSystemSettings();
+        } else {
+            throw new Error(response.error);
+        }
+    } catch (error) {
+        debugLog('❌ Failed to save settings:', error);
+        showMessage('Failed to save settings: ' + error.message, 'error');
+    }
+}
+
+// Reset settings function
+async function resetSystemSettings() {
+    if (!confirm('Are you sure you want to reset all settings to defaults? This cannot be undone.')) {
+        return;
+    }
+
+    try {
+        debugLog('🔄 Resetting system settings...');
+        const response = await Utils.apiRequest('/api/admin/settings/reset', {
+            method: 'POST'
+        });
+
+        if (response.success) {
+            showMessage('System settings reset to defaults successfully!', 'success');
+            loadSystemSettings(); // Reload the settings
+        } else {
+            throw new Error(response.error);
+        }
+    } catch (error) {
+        debugLog('❌ Failed to reset settings:', error);
+        showMessage('Failed to reset settings: ' + error.message, 'error');
+    }
+}
+
+// Test settings function
+async function testSettings() {
+    debugLog('🧪 Testing system settings...');
+    showMessage('Testing settings functionality...', 'info');
+    
+    // Test each setting category
+    try {
+        const response = await Utils.apiRequest('/api/admin/settings');
+        if (response.success) {
+            const settings = response.data.settings;
+            let testResults = [];
+            
+            // Test maintenance mode
+            if (settings.maintenance_mode) {
+                testResults.push('⚠️ Maintenance mode is ENABLED - users cannot access the site');
+            } else {
+                testResults.push('✅ Maintenance mode is disabled');
+            }
+            
+            // Test registration
+            if (settings.registration_enabled) {
+                testResults.push('✅ User registration is enabled');
+            } else {
+                testResults.push('⚠️ User registration is DISABLED - new users cannot register');
+            }
+            
+            // Test notifications
+            if (settings.enable_email_notifications) {
+                testResults.push('✅ Email notifications are enabled');
+            } else {
+                testResults.push('ℹ️ Email notifications are disabled');
+            }
+            
+            if (settings.enable_sms_notifications) {
+                testResults.push('✅ SMS notifications are enabled');
+            } else {
+                testResults.push('ℹ️ SMS notifications are disabled');
+            }
+            
+            // Show test results
+            const resultsHTML = testResults.map(result => `<div style="margin: 5px 0;">${result}</div>`).join('');
+            showMessage(`<strong>Settings Test Results:</strong><br>${resultsHTML}`, 'info');
+        }
+    } catch (error) {
+        debugLog('❌ Settings test failed:', error);
+        showMessage('Failed to test settings: ' + error.message, 'error');
+    }
+}
         // Admin logout function
         function adminLogout() {
             if (confirm('Are you sure you want to logout from admin dashboard?')) {

@@ -6,50 +6,10 @@ const { successResponse, errorResponse } = require('../utils/response');
 const { validateAmount, validateEmail } = require('../utils/validation');
 
 class WalletController {
-  // InitializGet wallet transactions
-  async getWalletTransactions(req, res) {
-    try {
-      const { data: transactions, error } = await supabase
-        .from('wallet_transactions')
-        .select('*')
-        .eq('user_id', req.user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-
-      return successResponse(res, 'Wallet transactions retrieved successfully', transactions);
-
-    } catch (error) {
-      console.error('Wallet transactions error:', error);
-      return errorResponse(res, error.message, 500);
-    }
-  }
-
-  // Get payment transactions
-  async getPaymentTransactions(req, res) {
-    try {
-      const { data: transactions, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', req.user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-
-      return successResponse(res, 'Payment transactions retrieved successfully', transactions);
-
-    } catch (error) {
-      console.error('Payment transactions error:', error);
-      return errorResponse(res, error.message, 500);
-    }
-  }
-
+  // Initialize payment
   async initializePayment(req, res) {
     try {
       const { amount, email, callback_url } = req.body;
-
       console.log('💰 Payment initialization request:', { amount, email, userId: req.user.id, callback_url });
 
       // Validate Paystack configuration
@@ -161,7 +121,7 @@ class WalletController {
     }
   }
 
-  // Verify Paystack payment
+  // Verify Paystack payment - WITH DUPLICATE PROTECTION
   async verifyPayment(req, res) {
     const { reference } = req.params;
 
@@ -170,6 +130,37 @@ class WalletController {
 
       if (!PAYSTACK_CONFIG.isValid()) {
         return errorResponse(res, 'Payment gateway not configured properly', 500);
+      }
+
+      // ✅ CRITICAL: Check if this transaction was already processed successfully
+      const { data: existingTransaction, error: transactionError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('payment_reference', reference)
+        .eq('user_id', req.user.id)
+        .single();
+
+      if (transactionError && transactionError.code !== 'PGRST116') {
+        console.error('Error checking existing transaction:', transactionError);
+      }
+
+      // If transaction exists and is already successful, return cached result
+      if (existingTransaction && existingTransaction.status === 'success') {
+        console.log('🔄 Payment already processed successfully, returning cached data');
+
+        // Get current balance to return accurate information
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('balance')
+          .eq('id', req.user.id)
+          .single();
+
+        return successResponse(res, 'Payment already verified successfully!', {
+          amount: existingTransaction.amount,
+          new_balance: profile?.balance || existingTransaction.amount,
+          reference: reference,
+          already_processed: true
+        });
       }
 
       // Verify payment with Paystack
@@ -191,6 +182,24 @@ class WalletController {
         const profile = await ensureProfileExists(req.user.id, req.user.email, req.user.user_metadata);
         if (!profile) {
           return errorResponse(res, 'User profile not found', 500);
+        }
+
+        // ✅ Check again for race conditions before processing
+        const { data: finalCheck } = await supabase
+          .from('transactions')
+          .select('status')
+          .eq('payment_reference', reference)
+          .eq('user_id', req.user.id)
+          .single();
+
+        if (finalCheck && finalCheck.status === 'success') {
+          console.log('🔄 Race condition detected - payment already processed');
+          return successResponse(res, 'Payment verified successfully!', {
+            amount: amount,
+            new_balance: parseFloat(profile.balance) + amount,
+            reference: reference,
+            already_processed: true
+          });
         }
 
         // Update transaction status to success
@@ -265,55 +274,55 @@ class WalletController {
     }
   }
 
-  // In getWalletTransactions - add logging
-async getWalletTransactions(req, res) {
-  try {
-    console.log('🔍 Fetching wallet transactions for user:', req.user.id);
-    
-    const { data: transactions, error } = await supabase
-      .from('wallet_transactions')
-      .select('*')
-      .eq('user_id', req.user.id)
-      .order('created_at', { ascending: false })
-      .limit(50);
+  // Get wallet transactions
+  async getWalletTransactions(req, res) {
+    try {
+      console.log('🔍 Fetching wallet transactions for user:', req.user.id);
 
-    if (error) throw error;
+      const { data: transactions, error } = await supabase
+        .from('wallet_transactions')
+        .select('*')
+        .eq('user_id', req.user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-    console.log('💰 Wallet transactions found:', transactions?.length || 0);
-    console.log('📊 Sample transaction:', transactions?.[0]);
+      if (error) throw error;
 
-    return successResponse(res, 'Wallet transactions retrieved successfully', transactions);
+      console.log('💰 Wallet transactions found:', transactions?.length || 0);
+      console.log('📊 Sample transaction:', transactions?.[0]);
 
-  } catch (error) {
-    console.error('Wallet transactions error:', error);
-    return errorResponse(res, error.message, 500);
+      return successResponse(res, 'Wallet transactions retrieved successfully', transactions);
+
+    } catch (error) {
+      console.error('Wallet transactions error:', error);
+      return errorResponse(res, error.message, 500);
+    }
   }
-}
 
-// In getPaymentTransactions - add logging
-async getPaymentTransactions(req, res) {
-  try {
-    console.log('🔍 Fetching payment transactions for user:', req.user.id);
-    
-    const { data: transactions, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', req.user.id)
-      .order('created_at', { ascending: false })
-      .limit(50);
+  // Get payment transactions
+  async getPaymentTransactions(req, res) {
+    try {
+      console.log('🔍 Fetching payment transactions for user:', req.user.id);
 
-    if (error) throw error;
+      const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', req.user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-    console.log('💳 Payment transactions found:', transactions?.length || 0);
-    console.log('📊 Sample transaction:', transactions?.[0]);
+      if (error) throw error;
 
-    return successResponse(res, 'Payment transactions retrieved successfully', transactions);
+      console.log('💳 Payment transactions found:', transactions?.length || 0);
+      console.log('📊 Sample transaction:', transactions?.[0]);
 
-  } catch (error) {
-    console.error('Payment transactions error:', error);
-    return errorResponse(res, error.message, 500);
+      return successResponse(res, 'Payment transactions retrieved successfully', transactions);
+
+    } catch (error) {
+      console.error('Payment transactions error:', error);
+      return errorResponse(res, error.message, 500);
+    }
   }
-}
 
   // Test Paystack connection
   async testPaystack(req, res) {
@@ -337,7 +346,6 @@ async getPaymentTransactions(req, res) {
 
     } catch (error) {
       console.error('Paystack test error:', error);
-
       let errorMessage = 'Paystack test failed';
       if (error.response) {
         errorMessage = error.response.data?.message || `Paystack Error: ${error.response.status}`;

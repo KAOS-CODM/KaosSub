@@ -236,7 +236,7 @@
         // Enhanced cleanup and redirect function
         function cleanupAndRedirect() {
             console.log('🔄 Cleaning up and redirecting to dashboard...');
-            
+
             // Clear any existing timers
             if (redirectTimer) {
                 clearTimeout(redirectTimer);
@@ -246,21 +246,21 @@
                 clearInterval(countdownInterval);
                 countdownInterval = null;
             }
-            
+
             // Remove reference from URL without reloading
             if (window.history.replaceState) {
                 const newUrl = window.location.pathname; // Remove query parameters
                 window.history.replaceState({}, document.title, newUrl);
             }
-            
+
             // Redirect to dashboard
             window.location.href = '/dashboard';
         }
 
-        // Enhanced showSuccess function with amount parameter
-        function showSuccess(message, newBalance = null, amount = null) {
+        // Enhanced showSuccess function with email protection
+        function showSuccess(message, newBalance = null, amount = null, isDuplicate = false) {
             paymentProcessed = true;
-            
+
             const loadingSection = document.getElementById('loading-section');
             const successSection = document.getElementById('success-section');
             const successMessage = document.getElementById('success-message');
@@ -276,17 +276,17 @@
             if (newBalance && balanceUpdate && newBalanceAmount) {
                 newBalanceAmount.textContent = Utils.formatCurrency(newBalance);
                 balanceUpdate.classList.remove('hidden');
-                
+
                 // Update localStorage with new balance immediately
                 localStorage.setItem('userBalance', newBalance.toString());
                 console.log('💰 Updated user balance in localStorage:', newBalance);
-                
+
                 // Show countdown and auto-redirect
                 let countdown = 5;
                 if (countdownMessage) {
                     countdownMessage.textContent = `Redirecting to dashboard in ${countdown} seconds...`;
                 }
-                
+
                 countdownInterval = setInterval(() => {
                     countdown--;
                     if (countdownMessage) {
@@ -298,47 +298,53 @@
                     }
                 }, 1000);
 
-                // ✅ FIXED: Send WALLET TOP-UP confirmation email with correct amount
-                setTimeout(async () => {
-                    try {
-                        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const reference = urlParams.get('reference');
-                        
-                        // ✅ Use the actual amount from API response instead of calculating
-                        const topupAmount = amount || (newBalance - parseFloat(localStorage.getItem('userBalance') || 0));
-                        
-                        const topupDetails = {
-                            reference: reference, // ✅ Use the actual reference from URL (Paystack reference)
-                            amount: topupAmount, // ✅ Use the actual amount from API
-                            status: 'success'
-                        };
+                // ✅ FIXED: Only send email for NEW payments, not duplicates
+                if (!isDuplicate) {
+                    setTimeout(async () => {
+                        try {
+                            const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const reference = urlParams.get('reference');
 
-                        console.log('📧 Sending wallet top-up email:', {
-                            email: userProfile.email,
-                            topupAmount: topupAmount,
-                            reference: topupDetails.reference
-                        });
+                            // ✅ Use the actual amount from API response instead of calculating
+                            const topupAmount = amount || (newBalance - parseFloat(localStorage.getItem('userBalance') || 0));
 
-                        await Utils.apiRequest('/api/email/send-wallet-topup', 'POST', {
-                            email: userProfile.email,
-                            topupDetails: topupDetails,
-                            userName: userProfile.full_name || 'Customer'
-                        });
+                            const topupDetails = {
+                                reference: reference, // ✅ Use the actual reference from URL (Paystack reference)
+                                amount: topupAmount, //  ✅ Use the actual amount from API
+                                status: 'success'
+                            };
 
-                        emailNotice.classList.remove('hidden');
-                        console.log('📧 Wallet top-up email sent successfully');
-                    } catch (emailError) {
-                        console.log('Wallet top-up confirmation email optional:', emailError.message);
-                    }
-                }, 1000);
+                            console.log('📧 Sending wallet top-up email:', {
+                                email: userProfile.email,
+                                topupAmount: topupAmount,
+                                reference: topupDetails.reference
+                            });
+
+                            await Utils.apiRequest('/api/email/send-wallet-topup', 'POST', {
+                                email: userProfile.email,
+                                topupDetails: topupDetails,
+                                userName: userProfile.full_name || 'Customer'
+                            });
+
+                            emailNotice.classList.remove('hidden');
+                            console.log('📧 Wallet top-up email sent successfully');
+                        } catch (emailError) {
+                            console.log('Wallet top-up confirmation email optional:', emailError.message);
+                        }
+                    }, 1000);
+                } else {
+                    // For duplicate payments, just show the notice without sending email
+                    emailNotice.classList.remove('hidden');
+                    emailNotice.innerHTML = '<i class="fas fa-info-circle"></i> <strong>Order confirmation was sent previously.</strong> Check your email inbox.';
+                }
             }
         }
 
         // Enhanced showError function
         function showError(message) {
             paymentProcessed = true;
-            
+
             const loadingSection = document.getElementById('loading-section');
             const errorSection = document.getElementById('error-section');
             const errorMessage = document.getElementById('error-message');
@@ -347,13 +353,13 @@
             if (loadingSection) loadingSection.classList.add('hidden');
             if (errorSection) errorSection.classList.remove('hidden');
             if (errorMessage) errorMessage.textContent = message;
-            
+
             // Auto-redirect on error too after 5 seconds
             let countdown = 5;
             if (errorCountdown) {
                 errorCountdown.textContent = `Redirecting to dashboard in ${countdown} seconds...`;
             }
-            
+
             countdownInterval = setInterval(() => {
                 countdown--;
                 if (errorCountdown) {
@@ -381,7 +387,7 @@
             localStorage.setItem('processedPayments', JSON.stringify(processedPayments));
         }
 
-        // Main verification function with improved amount handling
+        // Enhanced verification logic with proper backend duplicate protection
         async function verifyPayment() {
             try {
                 // Prevent duplicate verification
@@ -411,12 +417,13 @@
                 // Check localStorage to prevent duplicate processing
                 const processedPayments = JSON.parse(localStorage.getItem('processedPayments') || '{}');
                 if (processedPayments[reference]) {
-                    console.log('🔄 Payment already processed in localStorage, redirecting...');
-                    showSuccess('Payment already processed!', processedPayments[reference].new_balance, processedPayments[reference].amount);
+                    console.log('🔄 Payment already processed in localStorage, showing cached result...');
+                    // ✅ PASS true as isDuplicate parameter - NO API CALL for duplicates
+                    showSuccess('Payment already processed!', processedPayments[reference].new_balance, processedPayments[reference].amount, true);
                     return;
                 }
 
-                // Call backend to verify payment
+                // ✅ ONLY CALL BACKEND API FOR NEW PAYMENTS
                 console.log('🔄 Verifying payment with reference:', reference);
                 const response = await Utils.apiRequest(`/api/wallet/verify-payment/${reference}`);
 
@@ -432,7 +439,7 @@
                         verified: true,
                         timestamp: Date.now(),
                         new_balance: newBalance,
-                        amount: amount // ✅ Store the actual amount too
+                        amount: amount
                     };
                     localStorage.setItem('processedPayments', JSON.stringify(processedPayments));
 
@@ -441,8 +448,8 @@
                         successMessage = `Payment of ${Utils.formatCurrency(amount)} verified successfully! Your wallet balance has been updated.`;
                     }
 
-                    // ✅ PASS THE ACTUAL AMOUNT TO showSuccess
-                    showSuccess(successMessage, newBalance, amount);
+                    // ✅ PASS false as isDuplicate parameter (this is a new payment)
+                    showSuccess(successMessage, newBalance, amount, false);
                 } else {
                     throw new Error(response ? response.error : 'Payment verification failed');
                 }
@@ -456,22 +463,23 @@
         window.addEventListener('load', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const reference = urlParams.get('reference');
-            
+
             // If no reference parameter, redirect immediately
             if (!reference) {
                 console.log('❌ No payment reference found, redirecting to dashboard...');
                 window.location.href = '/dashboard';
                 return;
             }
-            
+
             // Check if this payment was already processed
             const processedPayments = JSON.parse(localStorage.getItem('processedPayments') || '{}');
             if (processedPayments[reference]) {
-                console.log('🔄 Payment already processed, redirecting to dashboard...');
-                showSuccess('Payment already processed!', processedPayments[reference].new_balance, processedPayments[reference].amount);
+                console.log('🔄 Payment already processed, showing cached result...');
+                // ✅ Pass true to indicate this is a duplicate
+                showSuccess('Payment already processed!', processedPayments[reference].new_balance, processedPayments[reference].amount, true);
                 return;
             }
-            
+
             // Proceed with normal verification
             cleanupProcessedPayments();
             verifyPayment();

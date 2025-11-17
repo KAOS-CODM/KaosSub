@@ -24,6 +24,10 @@ router.put('/orders/:id/status', auth, adminAuth, (req, res) => adminAuthControl
 // System Settings routes
 router.get('/settings', auth, adminAuth, (req, res) => adminAuthController.getSystemSettings(req, res));
 router.put('/settings', auth, adminAuth, (req, res) => adminAuthController.updateSystemSettings(req, res));
+// Add these routes to your admin routes
+router.get('/settings', adminAuthController.getSystemSettings);
+router.put('/settings', adminAuthController.updateSystemSettings);
+router.post('/settings/reset', adminAuthController.resetSystemSettings);
 
 // Data Plans Management routes
 router.get('/data-plans/stats', auth, adminAuth, (req, res) => adminAuthController.getDataPlansStats(req, res));
