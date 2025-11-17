@@ -2,16 +2,16 @@ const supabase = require('../config/supabase');
 const otpService = require('../services/otpService');
 const { successResponse, errorResponse } = require('../utils/response');
 const ensureProfileExists = require('../utils/profile');
+const { createClient } = require('@supabase/supabase-js');
 
-class AdminAuthController {
-    // Add this method to get admin client with service role
-    getAdminClient() {
-        const { createClient } = require('@supabase/supabase-js');
+// ✅ STANDALONE FUNCTION (outside the class)
+function getAdminClient() {
+    try {
         const supabaseUrl = process.env.SUPABASE_URL;
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         
-        if (!supabaseServiceKey) {
-            console.error('❌ SUPABASE_SERVICE_ROLE_KEY is not set in environment variables');
+        if (!supabaseUrl || !supabaseServiceKey) {
+            console.error('❌ SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not set in environment variables');
             throw new Error('Service role key not configured');
         }
 
@@ -22,7 +22,14 @@ class AdminAuthController {
                 persistSession: false
             }
         });
+    } catch (error) {
+        console.error('❌ Failed to create admin client:', error);
+        throw error;
     }
+}
+
+class AdminAuthController {
+    // ✅ REMOVED: getAdminClient method from class (now using standalone function)
 
     // Request OTP for admin login
     async requestAdminOTP(req, res) {
@@ -170,7 +177,7 @@ class AdminAuthController {
             console.log('🧪 DEBUG: --- Testing Data Retrieval ---');
 
             console.log('🧪 DEBUG: Testing profiles data (first 5)...');
-            const adminSupabase = this.getAdminClient();
+            const adminSupabase = getAdminClient(); // ✅ UPDATED
             const { data: profilesData, error: profilesError } = await adminSupabase
                 .from('profiles')
                 .select('id, email, role')
@@ -268,7 +275,7 @@ class AdminAuthController {
             console.log('🔍 Fetching all users from database using SERVICE ROLE CLIENT...');
             
             // Use service role client to bypass RLS
-            const adminSupabase = this.getAdminClient();
+            const adminSupabase = getAdminClient(); // ✅ UPDATED
             const { data: users, error } = await adminSupabase
                 .from('profiles')
                 .select(`
@@ -326,7 +333,7 @@ class AdminAuthController {
 
             console.log('🔍 Fetching ALL orders from database using SERVICE ROLE CLIENT...');
 
-            const adminSupabase = this.getAdminClient();
+            const adminSupabase = getAdminClient(); // ✅ UPDATED
             const { data: orders, error } = await adminSupabase
                 .from('orders')
                 .select(`
@@ -365,78 +372,79 @@ class AdminAuthController {
     }
 
     // Enhanced getSystemSettings method
-async getSystemSettings(req, res) {
-    try {
-        // Check if user is admin using role from middleware
-        if (req.user.role !== 'admin') {
-            return errorResponse(res, 'Access denied. Admin privileges required.', 403);
-        }
+    async getSystemSettings(req, res) {
+        try {
+            // Check if user is admin using role from middleware
+            if (req.user.role !== 'admin') {
+                return errorResponse(res, 'Access denied. Admin privileges required.', 403);
+            }
 
-        console.log('⚙️ Fetching system settings...');
+            console.log('⚙️ Fetching system settings...');
         
-        const adminSupabase = this.getAdminClient();
-        const { data: settings, error } = await adminSupabase
-            .from('admin_settings')
-            .select('*')
-            .order('category')
-            .order('setting_key');
+            const adminSupabase = getAdminClient(); // ✅ UPDATED
+            const { data: settings, error } = await adminSupabase
+                .from('admin_settings')
+                .select('*')
+                .order('category')
+                .order('setting_key');
 
-        if (error) {
-            console.error('❌ Error fetching settings:', error);
-            return errorResponse(res, 'Failed to fetch system settings', 500);
-        }
-
-        // Transform settings into a more usable format
-        const settingsObj = {};
-        const settingsByCategory = {};
-
-        settings.forEach(setting => {
-            // Convert value based on type
-            let value = setting.setting_value;
-            switch (setting.setting_type) {
-                case 'boolean':
-                    value = value === 'true';
-                    break;
-                case 'number':
-                    value = parseFloat(value);
-                    break;
-                case 'json':
-                    try {
-                        value = JSON.parse(value);
-                    } catch (e) {
-                        value = {};
-                    }
-                    break;
-                // string remains as is
+            if (error) {
+                console.error('❌ Error fetching settings:', error);
+                return errorResponse(res, 'Failed to fetch system settings', 500);
             }
 
-            settingsObj[setting.setting_key] = value;
-            
-            // Group by category
-            if (!settingsByCategory[setting.category]) {
-                settingsByCategory[setting.category] = [];
-            }
-            settingsByCategory[setting.category].push({
-                ...setting,
-                parsed_value: value
+            // Transform settings into a more usable format
+            const settingsObj = {};
+            const settingsByCategory = {};
+
+            settings.forEach(setting => {
+                // Convert value based on type
+                let value = setting.setting_value;
+                switch (setting.setting_type) {
+                    case 'boolean':
+                        value = value === 'true';
+                        break;
+                    case 'number':
+                        value = parseFloat(value);
+                        break;
+                    case 'json':
+                        try {
+                            value = JSON.parse(value);
+                        } catch (e) {
+                            value = {};
+                        }
+                        break;
+                    // string remains as is
+                }
+
+                settingsObj[setting.setting_key] = value;
+                
+                // Group by category
+                if (!settingsByCategory[setting.category]) {
+                    settingsByCategory[setting.category] = [];
+                }
+                settingsByCategory[setting.category].push({
+                    ...setting,
+                    parsed_value: value
+                });
             });
-        });
 
-        const result = {
-            settings: settingsObj,
-            settings_by_category: settingsByCategory,
-            raw_settings: settings,
-            updated_at: new Date().toISOString()
-        };
+            const result = {
+                settings: settingsObj,
+                settings_by_category: settingsByCategory,
+                raw_settings: settings,
+                updated_at: new Date().toISOString()
+            };
 
-        console.log('✅ System settings retrieved successfully');
-        return successResponse(res, 'System settings retrieved', result);
+            console.log('✅ System settings retrieved successfully');
+            return successResponse(res, 'System settings retrieved', result);
 
-    } catch (error) {
-        console.error('❌ Get system settings failed:', error);
-        return errorResponse(res, error.message, 500);
+        } catch (error) {
+            console.error('❌ Get system settings failed:', error);
+            return errorResponse(res, error.message, 500);
+        }
     }
-}
+
     // Update user role
     async updateUserRole(req, res) {
         try {
@@ -453,7 +461,7 @@ async getSystemSettings(req, res) {
             }
 
             // Update user role using service role client
-            const adminSupabase = this.getAdminClient();
+            const adminSupabase = getAdminClient(); // ✅ UPDATED
             const { data, error } = await adminSupabase
                 .from('profiles')
                 .update({ role })
@@ -499,7 +507,7 @@ async getSystemSettings(req, res) {
             }
 
             // Update order status using service role client
-            const adminSupabase = this.getAdminClient();
+            const adminSupabase = getAdminClient(); // ✅ UPDATED
             const { data, error } = await adminSupabase
                 .from('orders')
                 .update({
@@ -531,140 +539,139 @@ async getSystemSettings(req, res) {
         }
     }
 
-    
-// Enhanced updateSystemSettings method
-async updateSystemSettings(req, res) {
-    try {
-        const { settings } = req.body;
+    // Enhanced updateSystemSettings method
+    async updateSystemSettings(req, res) {
+        try {
+            const { settings } = req.body;
 
-        // Check if user is admin using role from middleware
-        if (req.user.role !== 'admin') {
-            return errorResponse(res, 'Access denied. Admin privileges required.', 403);
-        }
-
-        if (!settings || typeof settings !== 'object') {
-            return errorResponse(res, 'Settings object is required');
-        }
-
-        console.log('⚙️ Updating system settings:', Object.keys(settings));
-
-        const adminSupabase = this.getAdminClient();
-        const updates = [];
-        const updatedSettings = {};
-
-        // Prepare updates for each setting
-        for (const [key, value] of Object.entries(settings)) {
-            let stringValue;
-            
-            // Convert value to string based on type
-            if (typeof value === 'boolean') {
-                stringValue = value.toString();
-            } else if (typeof value === 'object') {
-                stringValue = JSON.stringify(value);
-            } else {
-                stringValue = value.toString();
+            // Check if user is admin using role from middleware
+            if (req.user.role !== 'admin') {
+                return errorResponse(res, 'Access denied. Admin privileges required.', 403);
             }
 
-            updates.push(
-                adminSupabase
-                    .from('admin_settings')
-                    .update({
-                        setting_value: stringValue,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('setting_key', key)
-            );
+            if (!settings || typeof settings !== 'object') {
+                return errorResponse(res, 'Settings object is required');
+            }
 
-            updatedSettings[key] = value;
+            console.log('⚙️ Updating system settings:', Object.keys(settings));
+
+            const adminSupabase = getAdminClient(); // ✅ UPDATED
+            const updates = [];
+            const updatedSettings = {};
+
+            // Prepare updates for each setting
+            for (const [key, value] of Object.entries(settings)) {
+                let stringValue;
+                
+                // Convert value to string based on type
+                if (typeof value === 'boolean') {
+                    stringValue = value.toString();
+                } else if (typeof value === 'object') {
+                    stringValue = JSON.stringify(value);
+                } else {
+                    stringValue = value.toString();
+                }
+
+                updates.push(
+                    adminSupabase
+                        .from('admin_settings')
+                        .update({
+                            setting_value: stringValue,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('setting_key', key)
+                );
+
+                updatedSettings[key] = value;
+            }
+
+            // Execute all updates
+            const results = await Promise.all(updates);
+            const errorCount = results.filter(result => result.error).length;
+
+            if (errorCount > 0) {
+                console.error(`❌ Failed to update ${errorCount} settings`);
+                return errorResponse(res, `Failed to update ${errorCount} settings`, 500);
+            }
+
+            console.log(`✅ Updated ${updates.length - errorCount} settings successfully`);
+
+            return successResponse(res, 'System settings updated successfully', {
+                updated_settings: updatedSettings,
+                total_updated: updates.length - errorCount,
+                failed_updates: errorCount,
+                updated_at: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('❌ Update system settings failed:', error);
+            return errorResponse(res, error.message, 500);
         }
-
-        // Execute all updates
-        const results = await Promise.all(updates);
-        const errorCount = results.filter(result => result.error).length;
-
-        if (errorCount > 0) {
-            console.error(`❌ Failed to update ${errorCount} settings`);
-            return errorResponse(res, `Failed to update ${errorCount} settings`, 500);
-        }
-
-        console.log(`✅ Updated ${updates.length - errorCount} settings successfully`);
-
-        return successResponse(res, 'System settings updated successfully', {
-            updated_settings: updatedSettings,
-            total_updated: updates.length - errorCount,
-            failed_updates: errorCount,
-            updated_at: new Date().toISOString()
-        });
-
-    } catch (error) {
-        console.error('❌ Update system settings failed:', error);
-        return errorResponse(res, error.message, 500);
     }
-}
 
-// Reset settings to defaults
-async resetSystemSettings(req, res) {
-    try {
-        // Check if user is admin using role from middleware
-        if (req.user.role !== 'admin') {
-            return errorResponse(res, 'Access denied. Admin privileges required.', 403);
-        }
+    // Reset settings to defaults
+    async resetSystemSettings(req, res) {
+        try {
+            // Check if user is admin using role from middleware
+            if (req.user.role !== 'admin') {
+                return errorResponse(res, 'Access denied. Admin privileges required.', 403);
+            }
 
-        console.log('🔄 Resetting system settings to defaults...');
+            console.log('🔄 Resetting system settings to defaults...');
 
-        const adminSupabase = this.getAdminClient();
+            const adminSupabase = getAdminClient(); // ✅ UPDATED
         
-        // Define default settings
-        const defaultSettings = {
-            'site_name': 'KaosSub',
-            'support_email': 'support@kaossub.com',
-            'currency': 'NGN',
-            'maintenance_mode': 'false',
-            'registration_enabled': 'true',
-            'max_orders_per_user': '10',
-            'default_user_balance': '0',
-            'profit_margin': '10',
-            'auto_approve_orders': 'true',
-            'enable_email_notifications': 'true',
-            'enable_sms_notifications': 'false',
-            'low_balance_threshold': '1000',
-            'session_timeout': '24'
-        };
+            // Define default settings
+            const defaultSettings = {
+                'site_name': 'KaosSub',
+                'support_email': 'support@kaossub.com',
+                'currency': 'NGN',
+                'maintenance_mode': 'false',
+                'registration_enabled': 'true',
+                'max_orders_per_user': '10',
+                'default_user_balance': '0',
+                'profit_margin': '10',
+                'auto_approve_orders': 'true',
+                'enable_email_notifications': 'true',
+                'enable_sms_notifications': 'false',
+                'low_balance_threshold': '1000',
+                'session_timeout': '24'
+            };
 
-        // Reset all settings to defaults
-        const updates = [];
-        for (const [key, value] of Object.entries(defaultSettings)) {
-            updates.push(
-                adminSupabase
-                    .from('admin_settings')
-                    .update({
-                        setting_value: value,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('setting_key', key)
-            );
+            // Reset all settings to defaults
+            const updates = [];
+            for (const [key, value] of Object.entries(defaultSettings)) {
+                updates.push(
+                    adminSupabase
+                        .from('admin_settings')
+                        .update({
+                            setting_value: value,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('setting_key', key)
+                );
+            }
+
+            const results = await Promise.all(updates);
+            const errorCount = results.filter(result => result.error).length;
+
+            if (errorCount > 0) {
+                console.error(`❌ Failed to reset ${errorCount} settings`);
+                return errorResponse(res, `Failed to reset ${errorCount} settings`, 500);
+            }
+
+            console.log('✅ System settings reset to defaults');
+            return successResponse(res, 'System settings reset to defaults successfully', {
+                reset_at: new Date().toISOString(),
+                total_reset: updates.length - errorCount,
+                failed_resets: errorCount
+            });
+
+        } catch (error) {
+            console.error('❌ Reset system settings failed:', error);
+            return errorResponse(res, error.message, 500);
         }
-
-        const results = await Promise.all(updates);
-        const errorCount = results.filter(result => result.error).length;
-
-        if (errorCount > 0) {
-            console.error(`❌ Failed to reset ${errorCount} settings`);
-            return errorResponse(res, `Failed to reset ${errorCount} settings`, 500);
-        }
-
-        console.log('✅ System settings reset to defaults');
-        return successResponse(res, 'System settings reset to defaults successfully', {
-            reset_at: new Date().toISOString(),
-            total_reset: updates.length - errorCount,
-            failed_resets: errorCount
-        });
-
-    } catch (error) {
-        console.error('❌ Reset system settings failed:', error);
-        return errorResponse(res, error.message, 500);
     }
-}
 
     // Helper methods for user stats - UPDATED WITH SERVICE ROLE
     async getActiveUsers() {
@@ -672,7 +679,7 @@ async resetSystemSettings(req, res) {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        const adminSupabase = this.getAdminClient();
+        const adminSupabase = getAdminClient(); // ✅ UPDATED
         const { count, error } = await adminSupabase
             .from('profiles')
             .select('*', { count: 'exact', head: true })
@@ -685,7 +692,7 @@ async resetSystemSettings(req, res) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const adminSupabase = this.getAdminClient();
+        const adminSupabase = getAdminClient(); // ✅ UPDATED
         const { count, error } = await adminSupabase
             .from('profiles')
             .select('*', { count: 'exact', head: true })
@@ -698,7 +705,7 @@ async resetSystemSettings(req, res) {
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-        const adminSupabase = this.getAdminClient();
+        const adminSupabase = getAdminClient(); // ✅ UPDATED
         const { count, error } = await adminSupabase
             .from('profiles')
             .select('*', { count: 'exact', head: true })
@@ -709,7 +716,7 @@ async resetSystemSettings(req, res) {
 
     // Helper methods for stats - UPDATED WITH SERVICE ROLE
     async getTotalUsers() {
-        const adminSupabase = this.getAdminClient();
+        const adminSupabase = getAdminClient(); // ✅ UPDATED
         const { count, error } = await adminSupabase
             .from('profiles')
             .select('*', { count: 'exact', head: true });
@@ -719,7 +726,7 @@ async resetSystemSettings(req, res) {
     }
 
     async getTotalOrders() {
-        const adminSupabase = this.getAdminClient();
+        const adminSupabase = getAdminClient(); // ✅ UPDATED
         const { count, error } = await adminSupabase
             .from('orders')
             .select('*', { count: 'exact', head: true });
@@ -729,7 +736,7 @@ async resetSystemSettings(req, res) {
     }
 
     async getTotalRevenue() {
-        const adminSupabase = this.getAdminClient();
+        const adminSupabase = getAdminClient(); // ✅ UPDATED
         const { data, error } = await adminSupabase
             .from('orders')
             .select('amount_paid, status, profiles(email)')
@@ -746,7 +753,7 @@ async resetSystemSettings(req, res) {
     }
 
     async getRecentOrders() {
-        const adminSupabase = this.getAdminClient();
+        const adminSupabase = getAdminClient(); // ✅ UPDATED
         const { data, error } = await adminSupabase
             .from('orders')
             .select(`
@@ -769,7 +776,7 @@ async resetSystemSettings(req, res) {
                 return errorResponse(res, 'Access denied. Admin privileges required.', 403);
             }
 
-            const adminSupabase = this.getAdminClient();
+            const adminSupabase = getAdminClient(); // ✅ UPDATED
             const { data: plans, error } = await adminSupabase
                 .from('data_plans')
                 .select(`
@@ -855,7 +862,7 @@ async resetSystemSettings(req, res) {
             }
 
             // Build query
-            const adminSupabase = this.getAdminClient();
+            const adminSupabase = getAdminClient(); // ✅ UPDATED
             let query = adminSupabase
                 .from('data_plans')
                 .select('id, price')
@@ -905,6 +912,94 @@ async resetSystemSettings(req, res) {
         }
     }
 
+     // ✅ CORRECTED: Delete user and all associated data based on your actual schema
+async deleteUser(req, res) {
+    try {
+        const { id } = req.params;
+
+        // Check if user is admin using role from middleware
+        if (req.user.role !== 'admin') {
+            return errorResponse(res, 'Access denied. Admin privileges required.', 403);
+        }
+
+        // Prevent admin from deleting themselves
+        if (id === req.user.id) {
+            return errorResponse(res, 'You cannot delete your own account.', 400);
+        }
+
+        console.log(`🗑️ Deleting user ${id} and all associated data...`);
+
+        const adminSupabase = getAdminClient();
+
+        // ✅ UPDATED: Based on your actual foreign key relationships
+        const tablesToDeleteFrom = [
+            'admin_otp_attempts',
+            'admin_otps', 
+            'wallet_transactions',
+            'transactions',
+            'orders',
+            'profiles' // This should be last since it's the parent table
+        ];
+
+        let deletedRecords = 0;
+        const deletionResults = {};
+
+        // Delete from each table in order (respecting foreign key constraints)
+        for (const table of tablesToDeleteFrom) {
+            try {
+                console.log(`🗑️ Deleting from ${table} for user ${id}...`);
+                
+                let query;
+                if (table === 'profiles') {
+                    // ✅ Profiles table uses 'id' column, not 'user_id'
+                    query = adminSupabase
+                        .from(table)
+                        .delete()
+                        .eq('id', id)
+                        .select();
+                } else {
+                    // All other tables use 'user_id' column
+                    query = adminSupabase
+                        .from(table)
+                        .delete()
+                        .eq('user_id', id)
+                        .select();
+                }
+
+                const { data, error } = await query;
+
+                if (error) {
+                    console.error(`❌ Error deleting from ${table}:`, error);
+                    deletionResults[table] = { success: false, error: error.message };
+                } else {
+                    const deletedCount = data ? data.length : 0;
+                    deletedRecords += deletedCount;
+                    deletionResults[table] = { 
+                        success: true, 
+                        deleted_count: deletedCount 
+                    };
+                    console.log(`✅ Deleted ${deletedCount} records from ${table}`);
+                }
+            } catch (tableError) {
+                console.error(`❌ Failed to delete from ${table}:`, tableError);
+                deletionResults[table] = { success: false, error: tableError.message };
+            }
+        }
+
+        console.log(`✅ User deletion completed. Total records deleted: ${deletedRecords}`);
+        
+        return successResponse(res, 'User and all associated data deleted successfully', {
+            user_id: id,
+            total_records_deleted: deletedRecords,
+            deletion_results: deletionResults,
+            deleted_at: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Delete user failed:', error);
+        return errorResponse(res, error.message, 500);
+    }
+}
     // Add single data plan
     async addSinglePlan(req, res) {
         try {
@@ -920,7 +1015,7 @@ async resetSystemSettings(req, res) {
                 return errorResponse(res, 'Network, name, and price are required');
             }
 
-            const adminSupabase = this.getAdminClient();
+            const adminSupabase = getAdminClient(); // ✅ UPDATED
 
             // Get data type ID
             const { data: dataType, error: typeError } = await adminSupabase
@@ -982,7 +1077,7 @@ async resetSystemSettings(req, res) {
                 return errorResponse(res, 'Network and plans array are required');
             }
 
-            const adminSupabase = this.getAdminClient();
+            const adminSupabase = getAdminClient(); // ✅ UPDATED
 
             // Get data type ID
             const { data: dataType, error: typeError } = await adminSupabase

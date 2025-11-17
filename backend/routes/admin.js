@@ -16,6 +16,8 @@ router.get('/stats', auth, adminAuth, (req, res) => adminAuthController.getAdmin
 router.get('/users', auth, adminAuth, (req, res) => adminAuthController.getAllUsers(req, res));
 router.put('/users/:id/role', auth, adminAuth, (req, res) => adminAuthController.updateUserRole(req, res));
 router.get('/users/stats', auth, adminAuth, (req, res) => adminAuthController.getUserStats(req, res));
+// Add this route to your admin routes
+router.delete('/users/:id', auth, adminAuthController.deleteUser);
 
 // Order Management routes
 router.get('/orders', auth, adminAuth, (req, res) => adminAuthController.getAllOrders(req, res));

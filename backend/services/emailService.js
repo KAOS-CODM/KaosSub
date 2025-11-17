@@ -297,18 +297,34 @@ class EmailService {
 
     // Send admin notification email
     async sendAdminNotification(subject, message, retries = 3) {
-        const adminEmail = process.env.ADMIN_EMAIL;
+    const adminEmail = process.env.ADMIN_EMAIL;
 
-        if (!adminEmail) {
-            console.log('📧 DEMO: Admin notification would be sent:');
-            console.log('   - Subject:', subject);
-            console.log('   - Message:', message);
-            return { success: true, demo: true };
-        }
-
-        const html = this.generateAdminNotificationTemplate(subject, message);
-        return await this.sendOTPEmail(adminEmail, 'N/A', 'Administrator', retries);
+    if (!adminEmail) {
+        console.log('📧 DEMO: Admin notification would be sent:');
+        console.log('   - Subject:', subject);
+        console.log('   - Message:', message);
+        return { success: true, demo: true };
     }
+
+    const html = this.generateAdminNotificationTemplate(subject, message);
+    
+    // ✅ FIX: Use queueEmail directly
+    if (!this.demoMode) {
+        return await this.queueEmail(adminEmail, subject, html);
+    }
+    
+    // Demo mode
+    console.log(`📧 DEMO: Admin Notification would be sent:`);
+    console.log('   - To:', adminEmail);
+    console.log('   - Subject:', subject);
+    console.log('   - Message:', message);
+    
+    return {
+        success: true,
+        demo: true,
+        message: 'Demo mode - Admin notification logged to console'
+    };
+}
 
     // ✅ FIXED: Send welcome email
     async sendWelcomeEmail(email, userName) {
@@ -880,49 +896,145 @@ class EmailService {
         `;
     }
 
-    // Generate welcome email template
-    generateWelcomeEmailTemplate(userName) {
-        return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
-                .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-                .header { text-align: center; margin-bottom: 30px; }
-                .logo { color: #007bff; font-size: 24px; font-weight: bold; }
-                .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <div class="logo">KaosSub</div>
-                    <h2>Welcome to KaosSub!</h2>
+   // ✅ ENHANCE: Generate beautiful welcome email template
+generateWelcomeEmailTemplate(userName) {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0;
+                padding: 20px;
+                min-height: 100vh;
+            }
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                padding: 40px;
+                border-radius: 15px;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                border: 1px solid #e0e0e0;
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 40px;
+                padding-bottom: 20px;
+                border-bottom: 2px solid #f0f0f0;
+            }
+            .logo {
+                color: #28a745;
+                font-size: 32px;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+            .welcome-badge {
+                background: linear-gradient(135deg, #28a745, #20c997);
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                font-size: 24px;
+                font-weight: bold;
+                text-align: center;
+                margin: 30px 0;
+                box-shadow: 0 5px 15px rgba(40,167,69,0.3);
+            }
+            .features {
+                background: #f8f9fa;
+                padding: 25px;
+                border-radius: 10px;
+                margin: 25px 0;
+                border-left: 4px solid #28a745;
+            }
+            .feature-item {
+                display: flex;
+                align-items: center;
+                margin-bottom: 12px;
+                padding: 8px 0;
+            }
+            .feature-icon {
+                color: #28a745;
+                font-size: 18px;
+                margin-right: 12px;
+                min-width: 24px;
+            }
+            .footer {
+                margin-top: 40px;
+                text-align: center;
+                color: #666;
+                font-size: 12px;
+                padding-top: 20px;
+                border-top: 1px solid #f0f0f0;
+            }
+            .user-greeting {
+                font-size: 18px;
+                color: #333;
+                margin-bottom: 20px;
+            }
+            @media (max-width: 600px) {
+                .container { padding: 20px; margin: 10px; }
+                .welcome-badge { font-size: 20px; padding: 15px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="logo">KaosSub</div>
+                <h2 style="color: #333; margin-top: 20px;">Welcome to KaosSub! 🎉</h2>
+            </div>
+
+            <p class="user-greeting">Hello <strong>${userName}</strong>,</p>
+
+            <div class="welcome-badge">
+                ✅ Account Successfully Created
+            </div>
+
+            <p style="color: #555; line-height: 1.6; text-align: center;">
+                Welcome to KaosSub! We're excited to have you on board. Your account has been successfully created and you're ready to start enjoying seamless data subscriptions.
+            </p>
+
+            <div class="features">
+                <div class="feature-item">
+                    <span class="feature-icon">📱</span>
+                    <span><strong>Data Bundles:</strong> Purchase for all Nigerian networks</span>
                 </div>
-
-                <p>Hello <strong>${userName}</strong>,</p>
-
-                <p>Welcome to KaosSub! Your account has been successfully created.</p>
-
-                <p>You can now:</p>
-                <ul>
-                    <li>Purchase data bundles for all Nigerian networks</li>
-                    <li>Manage your wallet and transactions</li>
-                    <li>View your order history</li>
-                    <li>Enjoy seamless data subscriptions</li>
-                </ul>
-
-                <p>If you have any questions, feel free to contact our support team.</p>
-
-                <div class="footer">
-                    <p>&copy; 2024 KaosSub. All rights reserved.</p>
+                <div class="feature-item">
+                    <span class="feature-icon">💳</span>
+                    <span><strong>Wallet System:</strong> Secure funding and transactions</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🚀</span>
+                    <span><strong>Instant Activation:</strong> Fast data bundle delivery</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <span><strong>Order History:</strong> Track all your purchases</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🛡️</span>
+                    <span><strong>Secure:</strong> Bank-level security for your account</span>
                 </div>
             </div>
-        </body>
-        </html>
-        `;
-    }
+
+            <p style="color: #555; line-height: 1.6; text-align: center;">
+                Get started by funding your wallet and purchasing your first data bundle!
+            </p>
+
+            <div class="footer">
+                <p>&copy; 2024 KaosSub. All rights reserved.</p>
+                <p>If you have any questions, feel free to contact our support team.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+}
 
         // Generate password reset template
     generatePasswordResetTemplate(resetToken, userName) {
@@ -1195,67 +1307,179 @@ class EmailService {
         `;
     }
 
-    // Send contact form notification
-    async sendContactNotification(contactData) {
-        try {
-            const { name, email, message, submitted_at } = contactData;
+    // Send contact form notification - FIXED VERSION
+async sendContactNotification(contactData) {
+    try {
+        const { name, email, message, submitted_at } = contactData;
 
-            const emailContent = {
-                to: process.env.ADMIN_EMAIL || 'support@kaossub.com',
-                subject: `New Contact Form Submission from ${name}`,
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #dc3545;">New Contact Form Submission</h2>
-                        <div style="background: #f8f9fa; padding: 20px; border-radius: 5px;">
-                            <p><strong>Name:</strong> ${name}</p>
-                            <p><strong>Email:</strong> ${email}</p>
-                            <p><strong>Submitted:</strong> ${new Date(submitted_at).toLocaleString()}</p>
-                            <p><strong>Message:</strong></p>
-                            <div style="background: white; padding: 15px; border-left: 4px solid #dc3545; margin-top: 10px;">
-                                ${message.replace(/\n/g, '<br>')}
-                            </div>
-                        </div>
-                        <p style="margin-top: 20px; color: #666;">
-                            This message was sent from the KaosSub contact form.
-                        </p>
-                    </div>
-                `
-            };
+        const subject = `New Contact Form Submission from ${name}`;
+        const html = this.generateContactFormTemplate(contactData);
 
-            // Use the existing sendOTPEmail method which handles both demo and production modes
-            const result = await this.sendOTPEmail(
-                emailContent.to,
-                'CONTACT_FORM', // Using a placeholder since sendOTPEmail expects an OTP
-                name,
-                3
-            );
-
-            // Override the subject for contact form notifications
-            if (result.success && !this.demoMode) {
-                // In production, we need to send the actual contact form email
-                const mailOptions = {
-                    from: process.env.EMAIL_FROM || 'KaosSub <noreply@kaossub.com>',
-                    to: emailContent.to,
-                    subject: emailContent.subject,
-                    html: emailContent.html,
-                };
-
-                await this.transporter.sendMail(mailOptions);
-                console.log('✅ Contact notification email sent successfully');
-            } else if (result.success && this.demoMode) {
-                console.log('📧 DEMO: Contact notification would be sent:');
-                console.log('   - To:', emailContent.to);
-                console.log('   - Subject:', emailContent.subject);
-                console.log('   - From:', name, `<${email}>`);
-            }
-
-            return result;
-
-        } catch (error) {
-            console.error('Failed to send contact notification:', error);
-            throw error;
+        // Validate email
+        if (!this.validateEmail(email)) {
+            console.error('❌ Invalid email address:', email);
+            return { success: false, error: 'Invalid email address' };
         }
+
+        const adminEmail = process.env.ADMIN_EMAIL || 'support@kaossub.com';
+
+        // Use queue for rate limiting in production
+        if (!this.demoMode) {
+            return await this.queueEmail(adminEmail, subject, html);
+        }
+
+        // Demo mode
+        console.log(`📧 DEMO: Contact Form Notification would be sent:`);
+        console.log('   - To:', adminEmail);
+        console.log('   - Subject:', subject);
+        console.log('   - From:', `${name} <${email}>`);
+        console.log('   - Message:', message);
+
+        return {
+            success: true,
+            demo: true,
+            message: 'Demo mode - Contact form notification logged to console'
+        };
+
+    } catch (error) {
+        console.error('Failed to send contact notification:', error);
+        throw error;
     }
+}
+
+// ✅ ADD: Generate contact form email template
+generateContactFormTemplate(contactData) {
+    const { name, email, message, submitted_at } = contactData;
+    
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0;
+                padding: 20px;
+                min-height: 100vh;
+            }
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                padding: 40px;
+                border-radius: 15px;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                border: 1px solid #e0e0e0;
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 40px;
+                padding-bottom: 20px;
+                border-bottom: 2px solid #f0f0f0;
+            }
+            .logo {
+                color: #dc3545;
+                font-size: 32px;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+            .contact-details {
+                background: #f8f9fa;
+                padding: 25px;
+                border-radius: 10px;
+                margin: 25px 0;
+                border-left: 4px solid #dc3545;
+            }
+            .detail-row {
+                display: flex;
+                margin-bottom: 10px;
+                padding: 8px 0;
+            }
+            .detail-label {
+                font-weight: 600;
+                color: #495057;
+                min-width: 80px;
+            }
+            .detail-value {
+                color: #333;
+                flex: 1;
+            }
+            .message-box {
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                border: 1px solid #e9ecef;
+                margin: 15px 0;
+                line-height: 1.6;
+            }
+            .footer {
+                margin-top: 40px;
+                text-align: center;
+                color: #666;
+                font-size: 12px;
+                padding-top: 20px;
+                border-top: 1px solid #f0f0f0;
+            }
+            @media (max-width: 600px) {
+                .container { padding: 20px; margin: 10px; }
+                .detail-row { flex-direction: column; gap: 5px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="logo">KaosSub</div>
+                <h2 style="color: #333; margin-top: 20px;">New Contact Form Submission</h2>
+            </div>
+
+            <p style="color: #555; line-height: 1.6;">
+                You have received a new message from the KaosSub contact form.
+            </p>
+
+            <div class="contact-details">
+                <div class="detail-row">
+                    <span class="detail-label">Name:</span>
+                    <span class="detail-value">${name}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Email:</span>
+                    <span class="detail-value">
+                        <a href="mailto:${email}" style="color: #007bff;">${email}</a>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Submitted:</span>
+                    <span class="detail-value">${new Date(submitted_at).toLocaleString()}</span>
+                </div>
+            </div>
+
+            <h3 style="color: #333; margin-bottom: 10px;">Message:</h3>
+            <div class="message-box">
+                ${message.replace(/\n/g, '<br>')}
+            </div>
+
+            <div style="background: #e7f3ff; border: 1px solid #cfe2ff; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <strong>💡 Quick Actions:</strong>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Reply directly to: <a href="mailto:${email}">${email}</a></li>
+                    <li>Add to customer support tracking</li>
+                    <li>Follow up within 24 hours</li>
+                </ul>
+            </div>
+
+            <div class="footer">
+                <p>&copy; 2024 KaosSub. All rights reserved.</p>
+                <p>This is an automated notification from the KaosSub contact form.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+}
 }
 
 module.exports = new EmailService();

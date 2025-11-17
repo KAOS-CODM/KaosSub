@@ -210,6 +210,34 @@
     outline: none;
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(220, 53, 69, 0.3);
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 3px;
+}
+
+.alert-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
     </style>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -735,58 +763,71 @@
         }
 
         function displayUsers(users) {
-            const container = document.getElementById('userManagementSection');
-            
-            // Ensure users is an array and handle different data structures
-            if (!users || !Array.isArray(users)) {
-                debugLog('❌ Users data is not an array:', users);
-                container.innerHTML = '<p>Error: Users data format is invalid</p>';
-                return;
-            }
-            
-            debugLog(`👥 Displaying ${users.length} users`);
-            
-            const usersHTML = `
-                <div style="margin-bottom: 20px;">
-                    <h3>User List (${users.length} users)</h3>
-                    <div style="max-height: 400px; overflow-y: auto;">
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="background: #f8f9fa;">
-                                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Email</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Name</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Role</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Balance</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Joined</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${users.map(user => `
-                                    <tr>
-                                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${user.email || 'N/A'}</td>
-                                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${user.full_name || 'N/A'}</td>
-                                        <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                                            <span class="badge ${user.role === 'admin' ? 'badge-success' : 'badge-secondary'}">${user.role || 'user'}</span>
-                                        </td>
-                                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${Utils.formatCurrency(user.balance || 0)}</td>
-                                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${new Date(user.created_at).toLocaleDateString()}</td>
-                                        <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                                            ${user.role === 'user' ? 
-                                                `<button class="btn btn-sm" onclick="makeAdmin('${user.id}')">Make Admin</button>` :
-                                                `<button class="btn btn-sm btn-secondary" onclick="makeUser('${user.id}')">Make User</button>`
-                                            }
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
+    const container = document.getElementById('userManagementSection');
+    
+    if (!users || !Array.isArray(users)) {
+        debugLog('❌ Users data is not an array:', users);
+        container.innerHTML = '<p>Error: Users data format is invalid</p>';
+        return;
+    }
+    
+    debugLog(`👥 Displaying ${users.length} users`);
+    
+    const usersHTML = `
+        <div style="margin-bottom: 20px;">
+            <h3>User List (${users.length} users)</h3>
+            <div style="margin-bottom: 15px;">
+                <div class="alert alert-warning" style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px;">
+                    <strong>⚠️ Warning:</strong> Deleting a user will permanently remove all their data including orders, transactions, and wallet history.
                 </div>
-            `;
-            
-            container.innerHTML = usersHTML;
-        }
+            </div>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8f9fa;">
+                            <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Email</th>
+                            <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Name</th>
+                            <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Role</th>
+                            <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Balance</th>
+                            <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Joined</th>
+                            <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => `
+                            <tr>
+                                <td style="padding: 10px; border-bottom: 1px solid #eee;">${user.email || 'N/A'}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #eee;">${user.full_name || 'N/A'}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                                    <span class="badge ${user.role === 'admin' ? 'badge-success' : 'badge-secondary'}">${user.role || 'user'}</span>
+                                </td>
+                                <td style="padding: 10px; border-bottom: 1px solid #eee;">${Utils.formatCurrency(user.balance || 0)}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #eee;">${new Date(user.created_at).toLocaleDateString()}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                        ${user.role === 'user' ? 
+                                            `<button class="btn btn-sm" onclick="makeAdmin('${user.id}')" title="Make Admin">
+                                                <i class="fas fa-user-shield"></i>
+                                            </button>` :
+                                            `<button class="btn btn-sm btn-secondary" onclick="makeUser('${user.id}')" title="Make Regular User">
+                                                <i class="fas fa-user"></i>
+                                            </button>`
+                                        }
+                                        <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}', '${user.email}')" title="Delete User">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = usersHTML;
+}
 
         function displayUserStats(stats) {
             debugLog('📈 Displaying user stats:', stats);
@@ -1258,6 +1299,52 @@ async function testSettings() {
         showMessage('Failed to test settings: ' + error.message, 'error');
     }
 }
+
+// Delete user function
+async function deleteUser(userId, userEmail) {
+    if (!confirm(`🚨 DANGER: This will permanently delete user "${userEmail}" and ALL their data!\n\nThis includes:\n• All orders\n• All transactions\n• Wallet history\n• Session data\n• OTP records\n• User profile\n\nThis action cannot be undone!\n\nAre you absolutely sure?`)) {
+        return;
+    }
+
+    // Extra confirmation for destructive action
+    const confirmed = confirm(`⚠️ FINAL WARNING: You are about to PERMANENTLY DELETE user "${userEmail}" and all their data. This cannot be recovered!\n\nType "DELETE" to confirm:`);
+    
+    if (!confirmed) {
+        return;
+    }
+
+    const userInput = prompt(`Please type "DELETE" to confirm permanent deletion of user "${userEmail}":`);
+    
+    if (userInput !== 'DELETE') {
+        showMessage('User deletion cancelled. Confirmation text did not match.', 'warning');
+        return;
+    }
+
+    try {
+        debugLog(`🗑️ Deleting user: ${userId} (${userEmail})`);
+        showMessage('Deleting user and all associated data...', 'info');
+
+        const response = await Utils.apiRequest(`/api/admin/users/${userId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.success) {
+            showMessage(`✅ User "${userEmail}" and all associated data deleted successfully!`, 'success');
+            debugLog('✅ User deletion successful:', response.data);
+            
+            // Reload user management to reflect changes
+            setTimeout(() => {
+                loadUserManagement();
+            }, 2000);
+        } else {
+            throw new Error(response.error);
+        }
+    } catch (error) {
+        debugLog('❌ User deletion failed:', error);
+        showMessage('Failed to delete user: ' + error.message, 'error');
+    }
+}
+
         // Admin logout function
         function adminLogout() {
             if (confirm('Are you sure you want to logout from admin dashboard?')) {
